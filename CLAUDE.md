@@ -4,13 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is the **GEM Chapel** (Great Expectations Ministries International) website — a static, single-page church website deployed on Vercel. No build system, package manager, or test framework.
+**GEM Chapel** (Great Expectations Ministries International) — a static, single-page church website deployed on Vercel. No build system, package manager, or test framework.
 
 ## Architecture
 
-The site is split into three files:
+Three source files:
 - **`index.html`** — semantic HTML structure with section landmarks
-- **`styles.css`** — all CSS including design tokens, responsive breakpoints, and animations
+- **`styles.css`** — all CSS including design tokens (`:root` variables), responsive breakpoints, and animations
 - **`script.js`** — IIFE-wrapped vanilla JS for interactivity
 
 ### HTML Sections (in order)
@@ -25,21 +25,20 @@ Decorative `section-divider` elements separate major content groups.
 - Responsive breakpoints at 1024px, 768px, and 480px
 
 ### JavaScript Features
-- Scroll-triggered navbar with blur backdrop
+- Scroll-triggered navbar with blur backdrop (`#navbar.scrolled`)
 - Active nav link highlighting based on scroll position
-- Animated hamburger toggle with full-screen mobile overlay
-- DOM-based flame particle system (responsive particle count)
-- IntersectionObserver-based scroll reveal (`.reveal` / `.visible`), elements unobserved after reveal
+- Animated hamburger toggle with full-screen mobile overlay (`.nav-links.open`)
+- DOM-based flame particle system in hero (responsive particle count: 25 mobile, 50 desktop)
+- IntersectionObserver-based scroll reveal (`.reveal` → `.visible`), elements unobserved after reveal
 - Animated counters on `[data-count]` elements (years of ministry, branch count)
 - Smooth anchor scrolling with navbar offset compensation
-- Form validation with shake animation feedback
+- Form validation with shake animation feedback — **client-side only, no backend submission**
 
-## Other Assets (git-ignored)
-
-- **`Fresh Fire/`** — PDF devotional publications (~90MB, not in repo)
-- **`Logos/`** — JPG logo variants
-- **`GEM WEBSITES- UPDATED INFO.docx`** — Reference document with updated church info
-- **`gem-chapel-website.html`** — Original single-file version (superseded by index.html)
+### Key Patterns
+- All inline SVG icons use `stroke`-based rendering with `fill: none` and `stroke-width: 1.5`
+- Card hover effects use `transform: translateY(-Npx)` with `var(--ease-out-expo)` transitions
+- Staggered reveal animations use `.reveal-delay-1` through `.reveal-delay-4` utility classes
+- The `@keyframes shake` animation is inlined in `<head>` (used by JS form validation)
 
 ## Development
 
@@ -48,4 +47,14 @@ Open `index.html` directly in a browser, or use any static file server:
 python3 -m http.server
 ```
 
-Deployed via Vercel with zero configuration (static site auto-detected from `index.html`).
+## Deployment
+
+Deployed via Vercel (project: `gem-chapel-website`). Zero-config static site auto-detected from `index.html`. No build step.
+
+## Other Assets (git-ignored)
+
+- **`Fresh Fire/`** — PDF devotional publications (~90MB)
+- **`Logos/`** — JPG logo variants (GEM - Selected-03/04/05.jpg)
+- **`GEM WEBSITES- UPDATED INFO.docx`** — Reference document with updated church info
+
+**Not git-ignored but superseded:** `gem-chapel-website.html` — original single-file version, replaced by the split `index.html` + `styles.css` + `script.js` setup.
