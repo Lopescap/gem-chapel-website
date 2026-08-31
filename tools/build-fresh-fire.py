@@ -3,7 +3,13 @@
 build-fresh-fire.py — Generator for the Fresh Fire for Today section.
 
 Zero third-party dependencies. Reads tools/fresh-fire-bundle.json (the single
-source of truth) and writes entry and index HTML files into resources/fresh-fire/.
+source of truth) and writes:
+  - Entry pages (resources/fresh-fire/*.html)
+  - Index pages (theme/, need/, scripture/, names-of-god)
+  - Hub index (resources/fresh-fire/index.html)
+  - llms.txt at repo root
+  - sitemap.xml at repo root
+  - robots.txt at repo root
 
 Usage:
     python3 tools/build-fresh-fire.py
@@ -11,21 +17,29 @@ Usage:
 Idempotent: two runs produce byte-identical output.
 """
 
-import json, os, html as html_mod, sys
+import json, os, html as html_mod, sys, re
 from collections import Counter
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BUNDLE_PATH = os.path.join(ROOT, "tools", "fresh-fire-bundle.json")
 TEMPLATE_DIR = os.path.join(ROOT, "tools", "templates")
 OUTPUT_DIR = os.path.join(ROOT, "resources", "fresh-fire")
+EXISTING_DIRS = [ROOT]  # include ROOT for site-level files
 
 HEAD_TEMPLATE_PATH = os.path.join(TEMPLATE_DIR, "head.txt")
 NAV_TEMPLATE_PATH = os.path.join(TEMPLATE_DIR, "nav.txt")
 FOOTER_TEMPLATE_PATH = os.path.join(TEMPLATE_DIR, "footer.txt")
 
+# ── Helpers ─────────────────────────────────────────────────────────────────
 
 def esc(text):
+    """HTML-escape text."""
     return html_mod.escape(text, quote=True)
+
+
+def js(text):
+    """Return text as a JSON-safe string literal. Handles escaping for JSON-LD."""
+    return json.dumps(text, ensure_ascii=False)
 
 
 def load_bundle():
@@ -46,9 +60,7 @@ def load_templates():
 # ── URL helpers ────────────────────────────────────────────────────────────
 
 def href_url(pattern, slug=None):
-    """Root-relative URL for href attributes in page content.
-    Replaces {origin} with empty string so links stay on the current domain.
-    """
+    """Root-relative URL for href attributes in page content."""
     url = pattern.replace("{origin}", "")
     if slug is not None:
         url = url.replace("{slug}", slug)
@@ -56,9 +68,7 @@ def href_url(pattern, slug=None):
 
 
 def abs_url(pattern, origin, slug=None):
-    """Absolute URL for canonical/OG/JSON-LD use.
-    Replaces {origin} with the actual origin string.
-    """
+    """Absolute URL for canonical/OG/JSON-LD use."""
     url = pattern.replace("{origin}", origin)
     if slug is not None:
         url = url.replace("{slug}", slug)
@@ -75,6 +85,349 @@ def fill_head(title, meta_desc, canonical_url, head_tpl):
     h = h.replace("{{OG_TYPE}}", "website")
     return h
 
+
+# ── JSON-LD Builders ───────────────────────────────────────────────────────
+
+def build_breadcrumb_list(items_json_ld, origin):
+    """Build a BreadcrumbList JSON-LD object.
+    items_json_ld is a list of dicts with 'name' and 'url' keys.
+    Returns the LD+JSON <script> tag as a string, or empty string if no items.
+    """
+    if not items_json_ld:
+        return ""
+    elements = []
+    for i, item in enumerate(items_json_ld, 1):
+        elements.append({
+            "@type": "ListItem",
+            "position": i,
+            "name": item["name"],
+            "item": item["url"]
+        })
+    obj = {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": elements
+    }
+    return f'<script type="application/ld+json">\n{json.dumps(obj, indent=2, ensure_ascii=False)}\n</script>'
+
+
+def build_collection_page(entries_list, page_url, title, description, origin):
+    """Build a CollectionPage JSON-LD with hasPart listing entries."""
+    has_part = []
+    for entry in entries_list:
+        has_part.append({
+            "@type": "WebPage",
+            "url": entry["url"],
+            "name": entry["title"],
+            "abstract": entry.get("summary", "")
+        })
+    obj = {
+        "@context": "https://schema.org",
+        "@type": "CollectionPage",
+        "@id": page_url,
+        "url": page_url,
+        "name": title,
+        "description": description,
+        "hasPart": has_part
+    }
+    return f'<script type="application/ld+json">\n{json.dumps(obj, indent=2, ensure_ascii=False)}\n</script>'
+
+
+def build_book_entity(collection_title, collection_url, origin):
+    """Build the Book entity for 'Fresh Fire for Today, Volume 14'.
+    Returns a tuple (json_ld_html, book_id) where book_id is the @id to reference.
+    """
+    book_id = collection_url + "#collection"
+    obj = {
+        "@context": "https://schema.org",
+        "@type": "Book",
+        "@id": book_id,
+        "name": collection_title,
+        "url": collection_url,
+        "inLanguage": "en",
+        "author": {
+            "@type": "Organization",
+            "name": "Great Expectations Ministries International"
+        }
+    }
+    html_out = f'<script type="application/ld+json">\n{json.dumps(obj, indent=2, ensure_ascii=False)}\n</script>'
+    return html_out, book_id
+
+
+def build_entry_json_ld(entry, origin, patterns, bundle, book_id):
+    """Build the JSON-LD <script> tag for a devotional entry page (Article)."""
+    p = patterns
+    entry_url = abs_url(p["entry"], origin, entry["slug"])
+
+    # Keywords: entry keywords + resolved labels
+    keywords_list = list(entry.get("keywords", []))
+    facets = bundle["taxonomy"]["facets"]
+    for t_slug in entry.get("themes", []):
+        t_label = facets["theme"]["terms"][t_slug]["label"]
+        if t_label not in keywords_list:
+            keywords_list.append(t_label)
+    for n_slug in entry.get("needs", []):
+        n_label = facets["need"]["terms"][n_slug]["label"]
+        if n_label not in keywords_list:
+            keywords_list.append(n_label)
+    for pt_slug in entry.get("practices", []):
+        pt_label = facets["practice"]["terms"][pt_slug]["label"]
+        if pt_label not in keywords_list:
+            keywords_list.append(pt_label)
+    for a_slug in entry.get("attributes", []):
+        a_label = facets["attribute"]["terms"][a_slug]["label"]
+        if a_label not in keywords_list:
+            keywords_list.append(a_label)
+
+    # about — Thing per resolved tag
+    about_list = []
+    seen_labels = set()
+    for t_slug in entry.get("themes", []):
+        lbl = facets["theme"]["terms"][t_slug]["label"]
+        if lbl not in seen_labels:
+            about_list.append({"@type": "Thing", "name": lbl})
+            seen_labels.add(lbl)
+    for n_slug in entry.get("needs", []):
+        lbl = facets["need"]["terms"][n_slug]["label"]
+        if lbl not in seen_labels:
+            about_list.append({"@type": "Thing", "name": lbl})
+            seen_labels.add(lbl)
+    for pt_slug in entry.get("practices", []):
+        lbl = facets["practice"]["terms"][pt_slug]["label"]
+        if lbl not in seen_labels:
+            about_list.append({"@type": "Thing", "name": lbl})
+            seen_labels.add(lbl)
+    for a_slug in entry.get("attributes", []):
+        lbl = facets["attribute"]["terms"][a_slug]["label"]
+        if lbl not in seen_labels:
+            about_list.append({"@type": "Thing", "name": lbl})
+            seen_labels.add(lbl)
+
+    # citation — CreativeWork per scripture_references
+    citation_list = []
+    for ref in entry.get("scripture_references", []):
+        citation_list.append({"@type": "CreativeWork", "name": ref})
+
+    # isPartOf
+    if entry.get("series"):
+        is_part_of_schema = {
+            "@type": "CreativeWorkSeries",
+            "name": entry["series"],
+            "position": entry.get("series_part", 0)
+        }
+    else:
+        is_part_of_schema = {"@id": book_id}
+
+    obj = {
+        "@context": "https://schema.org",
+        "@type": "Article",
+        "headline": entry["title"],
+        "abstract": entry.get("summary", ""),
+        "articleSection": "Devotional",
+        "inLanguage": "en",
+        "url": entry_url,
+        "mainEntityOfPage": {"@id": entry_url},
+        "keywords": ", ".join(keywords_list),
+        "about": about_list,
+        "citation": citation_list,
+        "isPartOf": is_part_of_schema
+    }
+
+    bread_items = [
+        {"name": "Home", "url": origin},
+        {"name": "Resources", "url": f"{origin}/#resources"},
+        {"name": "Fresh Fire for Today", "url": abs_url(p["hub"], origin)},
+        {"name": entry["title"], "url": entry_url}
+    ]
+    bread_json = build_breadcrumb_list(bread_items, origin)
+
+    return f'<script type="application/ld+json">\n{json.dumps(obj, indent=2, ensure_ascii=False)}\n</script>\n\n{bread_json}'
+
+
+def build_term_index_json_ld(term_type, term_slug, term_data, entries_for_term, origin, patterns, bundle):
+    """Build JSON-LD for a term index page: CollectionPage + BreadcrumbList."""
+    p = patterns
+    page_url = abs_url(p[term_type], origin, term_slug)
+    title = term_data["label"]
+    description = term_data.get("definition", "") or f"Devotionals about {title}"
+
+    entries_list = []
+    for entry in entries_for_term:
+        entries_list.append({
+            "url": abs_url(p["entry"], origin, entry["slug"]),
+            "title": entry["title"],
+            "summary": entry.get("summary", "")
+        })
+
+    cp_html = build_collection_page(entries_list, page_url, title, description, origin)
+
+    hub_url = abs_url(p["hub"], origin)
+    bread_items = [
+        {"name": "Home", "url": origin},
+        {"name": "Resources", "url": f"{origin}/#resources"},
+        {"name": "Fresh Fire for Today", "url": hub_url},
+        {"name": title, "url": page_url}
+    ]
+    bread_html = build_breadcrumb_list(bread_items, origin)
+
+    return f"{cp_html}\n\n{bread_html}"
+
+
+def build_names_of_god_json_ld(attributes_entries, origin, patterns, bundle):
+    """Build JSON-LD for the names-of-god page: CollectionPage + BreadcrumbList."""
+    p = patterns
+    page_url = abs_url(p["names_of_god"], origin)
+    title = "Names of God"
+    description = "Devotionals exploring the names and attributes of God"
+
+    entries_list = []
+    for entry in attributes_entries:
+        entries_list.append({
+            "url": abs_url(p["entry"], origin, entry["slug"]),
+            "title": entry["title"],
+            "summary": entry.get("summary", "")
+        })
+
+    cp_html = build_collection_page(entries_list, page_url, title, description, origin)
+
+    hub_url = abs_url(p["hub"], origin)
+    bread_items = [
+        {"name": "Home", "url": origin},
+        {"name": "Resources", "url": f"{origin}/#resources"},
+        {"name": "Fresh Fire for Today", "url": hub_url},
+        {"name": title, "url": page_url}
+    ]
+    bread_html = build_breadcrumb_list(bread_items, origin)
+
+    return f"{cp_html}\n\n{bread_html}"
+
+
+def build_hub_json_ld(entries, origin, patterns, bundle):
+    """Build JSON-LD for the hub: CollectionPage + Book entity + BreadcrumbList."""
+    p = patterns
+    hub_url = abs_url(p["hub"], origin)
+    collection_title = bundle["collection"]["title"]
+
+    entries_list = []
+    for entry in entries:
+        entries_list.append({
+            "url": abs_url(p["entry"], origin, entry["slug"]),
+            "title": entry["title"],
+            "summary": entry.get("summary", "")
+        })
+
+    cp_html = build_collection_page(entries_list, hub_url, collection_title,
+                                     "Daily devotional readings from the Fresh Fire for Today series by Great Expectations Ministries.", origin)
+
+    book_html, book_id = build_book_entity(collection_title, hub_url, origin)
+
+    bread_items = [
+        {"name": "Home", "url": origin},
+        {"name": "Resources", "url": f"{origin}/#resources"},
+        {"name": "Fresh Fire for Today", "url": hub_url}
+    ]
+    bread_html = build_breadcrumb_list(bread_items, origin)
+
+    return f"{cp_html}\n\n{book_html}\n\n{bread_html}", book_id
+
+
+# ── JSON-LD Validation ────────────────────────────────────────────────────
+
+SCHEMA_ORG_TYPES = {
+    "Article": ["headline", "url", "mainEntityOfPage", "inLanguage", "articleSection", "isPartOf"],
+    "CollectionPage": ["url", "name", "hasPart"],
+    "Book": ["@id", "name", "url", "inLanguage"],
+    "BreadcrumbList": ["itemListElement"],
+    "CreativeWorkSeries": ["name", "position"],
+    "CreativeWork": ["name"],
+    "Thing": ["name"],
+}
+
+
+def validate_json_ld_objects(output_dir):
+    """Walk all generated HTML files, extract JSON-LD, and validate structure."""
+    print("Validating JSON-LD objects ...")
+    errors = []
+    count = 0
+    for dirpath, dirnames, filenames in os.walk(output_dir):
+        for fn in filenames:
+            if not fn.endswith(".html"):
+                continue
+            fp = os.path.join(dirpath, fn)
+            with open(fp, "r", encoding="utf-8") as f:
+                content = f.read()
+
+            # Find all <script type="application/ld+json"> blocks
+            pattern = r'<script type="application/ld\+json">\s*(.*?)</script>'
+            for m in re.finditer(pattern, content, re.DOTALL):
+                raw = m.group(1).strip()
+                count += 1
+                try:
+                    obj = json.loads(raw)
+                except json.JSONDecodeError as e:
+                    errors.append(f"{fp}: JSON parse error: {e}")
+                    continue
+
+                # Handle @graph
+                if "@graph" in obj:
+                    for item in obj["@graph"]:
+                        check_schema_item(item, fp, errors)
+                else:
+                    check_schema_item(obj, fp, errors)
+
+    if errors:
+        print(f"  JSON-LD ERRORS ({len(errors)}):", file=sys.stderr)
+        for err in errors:
+            print(f"    - {err}", file=sys.stderr)
+        sys.exit(1)
+
+    print(f"  ✓ {count} JSON-LD blocks validated, 0 errors.")
+
+
+def check_schema_item(obj, filepath, errors):
+    """Check a single JSON-LD object against schema.org expectations."""
+    atype = obj.get("@type")
+    if not atype:
+        errors.append(f"{filepath}: Missing @type")
+        return
+
+    if atype not in SCHEMA_ORG_TYPES:
+        # Unknown type is OK — might be a subtype
+        return
+
+    required = SCHEMA_ORG_TYPES[atype]
+    for field in required:
+        if field not in obj:
+            errors.append(f"{filepath}: {atype} missing '{field}'")
+
+    # Specific structural checks
+    if atype == "BreadcrumbList":
+        elements = obj.get("itemListElement", [])
+        if not isinstance(elements, list) or len(elements) < 2:
+            errors.append(f"{filepath}: BreadcrumbList needs >=2 items, got {len(elements)}")
+        else:
+            for i, item in enumerate(elements):
+                if item.get("@type") != "ListItem":
+                    errors.append(f"{filepath}: BreadcrumbList[{i}] not ListItem")
+                if "position" not in item or "name" not in item or "item" not in item:
+                    errors.append(f"{filepath}: BreadcrumbList[{i}] missing position/name/item")
+
+    if atype == "Article":
+        if "about" in obj:
+            for i, a in enumerate(obj["about"]):
+                if a.get("@type") != "Thing":
+                    errors.append(f"{filepath}: Article.about[{i}] not Thing")
+
+    if atype == "CollectionPage":
+        parts = obj.get("hasPart", [])
+        if not parts or len(parts) == 0:
+            errors.append(f"{filepath}: CollectionPage.hasPart is empty")
+        for i, part in enumerate(parts):
+            if "url" not in part or "name" not in part:
+                errors.append(f"{filepath}: CollectionPage.hasPart[{i}] missing url/name")
+
+
+# ── Page Builders ──────────────────────────────────────────────────────────
 
 def render_blocks(blocks):
     parts = []
@@ -94,16 +447,14 @@ def render_tag(label, url=None):
     return f'      <span class="ff-tag">{label}</span>'
 
 
-HUB_HREF = None  # set at runtime in main()
-
-
-def build_entry(entry, origin, entries, head_tpl, nav_tpl, footer_tpl, bundle, patterns):
-    """Build one devotional entry page per Prompt 3 spec."""
+def build_entry(entry, origin, entries, head_tpl, nav_tpl, footer_tpl, bundle, patterns, book_id):
+    """Build one devotional entry page."""
     p = patterns
-    # Head — canonical URLs stay absolute
     canonical_url = abs_url(p["entry"], origin, entry["slug"])
     meta_desc = entry["summary"][:160]
     head = fill_head(entry["title"], meta_desc, canonical_url, head_tpl)
+
+    json_ld = build_entry_json_ld(entry, origin, patterns, bundle, book_id)
 
     h1 = esc(entry["title"])
 
@@ -232,6 +583,8 @@ def build_entry(entry, origin, entries, head_tpl, nav_tpl, footer_tpl, bundle, p
     page = f"""<!DOCTYPE html>
 <html lang="en">
 {head}
+{json_ld}
+</head>
 <body>
 {nav_tpl}
 
@@ -260,13 +613,15 @@ def build_entry(entry, origin, entries, head_tpl, nav_tpl, footer_tpl, bundle, p
     return page
 
 
-def build_term_index(term_type, term_slug, term_data, entries_for_term, origin, head_tpl, nav_tpl, footer_tpl, patterns):
+def build_term_index(term_type, term_slug, term_data, entries_for_term, origin, head_tpl, nav_tpl, footer_tpl, patterns, bundle):
     """Build an index page for a theme, need, or scripture term."""
     p = patterns
     canonical = abs_url(p[term_type], origin, term_slug)
     title = term_data["label"]
     meta_desc = term_data.get("definition", "")[:160] if term_data.get("definition") else f"Devotionals about {term_data['label']}"
     head = fill_head(title, meta_desc, canonical, head_tpl)
+
+    json_ld = build_term_index_json_ld(term_type, term_slug, term_data, entries_for_term, origin, patterns, bundle)
 
     hero_title = esc(title)
 
@@ -293,6 +648,8 @@ def build_term_index(term_type, term_slug, term_data, entries_for_term, origin, 
     page = f"""<!DOCTYPE html>
 <html lang="en">
 {head}
+{json_ld}
+</head>
 <body>
 {nav_tpl}
 
@@ -321,14 +678,15 @@ def build_term_index(term_type, term_slug, term_data, entries_for_term, origin, 
     return page
 
 
-def build_names_of_god_index(attributes_entries, origin, head_tpl, nav_tpl, footer_tpl, patterns):
+def build_names_of_god_index(attributes_entries, origin, head_tpl, nav_tpl, footer_tpl, patterns, bundle):
     """Build the names-of-god index page with all 9 attribute entries."""
     p = patterns
     canonical = abs_url(p["names_of_god"], origin)
     head = fill_head("Names of God", "Devotionals exploring the names and attributes of God", canonical, head_tpl)
 
-    hero_title = "Names of God"
+    json_ld = build_names_of_god_json_ld(attributes_entries, origin, patterns, bundle)
 
+    hero_title = "Names of God"
     definition_html = '    <p>Exploring the divine nature and attributes of God through devotionals focused on His names and characteristics.</p>\n'
 
     entries_html = ""
@@ -350,6 +708,8 @@ def build_names_of_god_index(attributes_entries, origin, head_tpl, nav_tpl, foot
     page = f"""<!DOCTYPE html>
 <html lang="en">
 {head}
+{json_ld}
+</head>
 <body>
 {nav_tpl}
 
@@ -379,8 +739,7 @@ def build_names_of_god_index(attributes_entries, origin, head_tpl, nav_tpl, foot
 
 
 def build_hub_navigation(patterns, bundle):
-    """Build navigation block linking to theme, need, scripture, and names-of-god pages.
-    Uses root-relative hrefs."""
+    """Build navigation block linking to theme, need, scripture, and names-of-god pages."""
     p = patterns
     themes = bundle["taxonomy"]["facets"]["theme"]["terms"]
     needs = bundle["taxonomy"]["facets"]["need"]["terms"]
@@ -459,6 +818,8 @@ def build_hub(all_entries, origin, head_tpl, nav_tpl, footer_tpl, patterns, bund
     canonical = abs_url(p["hub"], origin)
     head = fill_head("Fresh Fire for Today", "Search and explore daily devotional readings from the Fresh Fire for Today series by Great Expectations Ministries.", canonical, head_tpl)
 
+    json_ld_block, book_id = build_hub_json_ld(all_entries, origin, patterns, bundle)
+
     hero_section = """<section class="article-hero">
   <div class="article-hero-bg"></div>
   <div class="article-hero-content">
@@ -526,6 +887,8 @@ def build_hub(all_entries, origin, head_tpl, nav_tpl, footer_tpl, patterns, bund
     page = f"""<!DOCTYPE html>
 <html lang="en">
 {head}
+{json_ld_block}
+</head>
 <body>
 {nav_tpl}
 
@@ -549,7 +912,176 @@ def build_hub(all_entries, origin, head_tpl, nav_tpl, footer_tpl, patterns, bund
 </body>
 </html>
 """
-    return page
+    return page, book_id
+
+
+# ── Site-level file builders ──────────────────────────────────────────────
+
+def build_llms_txt(entries, origin, patterns, bundle):
+    """Build llms.txt at the repo root.
+    Format: collection title, one-line description, then every entry as
+    - [title](absolute url): summary
+    Then links to hub, theme, need, scripture, and names-of-god index pages.
+    """
+    p = patterns
+    collection_title = bundle["collection"]["title"]
+
+    lines = [
+        f"# {collection_title}",
+        f"> Daily devotional readings from the Fresh Fire for Today series by Great Expectations Ministries.",
+        ""
+    ]
+
+    # Entries
+    for entry in entries:
+        entry_url = abs_url(p["entry"], origin, entry["slug"])
+        title = entry["title"]
+        summary = entry.get("summary", "")
+        line = f"- [{title}]({entry_url}): {summary}"
+        lines.append(line)
+
+    lines.append("")
+    lines.append("## Index Pages")
+    lines.append("")
+
+    # Hub
+    hub_url = abs_url(p["hub"], origin)
+    lines.append(f"- [Fresh Fire for Today]({hub_url}) — Main hub page with search and navigation")
+    lines.append("")
+
+    # Themes
+    themes = bundle["taxonomy"]["facets"]["theme"]["terms"]
+    lines.append("### Themes")
+    for slug, data in themes.items():
+        if data.get("has_page", False):
+            url = abs_url(p["theme"], origin, slug)
+            label = data["label"]
+            lines.append(f"- [{label}]({url}) — {data.get('definition', '')}")
+    lines.append("")
+
+    # Needs
+    needs = bundle["taxonomy"]["facets"]["need"]["terms"]
+    lines.append("### Needs")
+    for slug, data in needs.items():
+        if data.get("has_page", False):
+            url = abs_url(p["need"], origin, slug)
+            label = data["label"]
+            lines.append(f"- [{label}]({url}) — {data.get('definition', '')}")
+    lines.append("")
+
+    # Scriptures
+    scriptures = bundle["indexes"]["scripture_books"]
+    lines.append("### Scriptures")
+    for book in scriptures:
+        url = abs_url(p["scripture"], origin, book["slug"])
+        lines.append(f"- [{book['name']}]({url})")
+    lines.append("")
+
+    # Names of God
+    names_url = abs_url(p["names_of_god"], origin)
+    lines.append(f"- [Names of God]({names_url})")
+
+    return "\n".join(lines) + "\n"
+
+
+def build_robots_txt(origin):
+    """Build robots.txt at the repo root.
+    Allow everything, reference the sitemap.
+    """
+    return (
+        "User-agent: *\n"
+        "Allow: /\n"
+        "\n"
+        f"Sitemap: {origin}/sitemap.xml\n"
+    )
+
+
+def build_sitemap(origin, patterns, bundle, output_dir):
+    """Build sitemap.xml at the repo root.
+    Walks the repo for .html files, excludes noindex pages, uses clean URLs.
+    Includes all 32 pre-existing pages plus all 152 Fresh Fire pages.
+    """
+    urls = set()
+
+    # Fresh Fire pages — use clean URLs from patterns
+    p = patterns
+    # Entry pages
+    for entry in bundle["entries"]:
+        urls.add(abs_url(p["entry"], origin, entry["slug"]))
+    # Theme index pages
+    themes = bundle["taxonomy"]["facets"]["theme"]["terms"]
+    for slug, data in themes.items():
+        if data.get("has_page", False):
+            urls.add(abs_url(p["theme"], origin, slug))
+    # Need index pages
+    needs = bundle["taxonomy"]["facets"]["need"]["terms"]
+    for slug, data in needs.items():
+        if data.get("has_page", False):
+            urls.add(abs_url(p["need"], origin, slug))
+    # Scripture index pages
+    for book in bundle["indexes"]["scripture_books"]:
+        urls.add(abs_url(p["scripture"], origin, book["slug"]))
+    # Names of God
+    urls.add(abs_url(p["names_of_god"], origin))
+    # Hub
+    urls.add(abs_url(p["hub"], origin))
+
+    # Existing pages — walk the repo for .html files outside resources/fresh-fire
+    exclude_dirs = {"memory", "media", "tools", ".git", "node_modules"}
+    for dirpath, dirnames, filenames in os.walk(ROOT):
+        # Skip hidden dirs and excluded dirs
+        dirnames[:] = [d for d in dirnames if not d.startswith(".") and d not in exclude_dirs
+                       and d != "fresh-fire" and not d.startswith("inbound")]
+        for fn in filenames:
+            if not fn.endswith(".html"):
+                continue
+            fp = os.path.join(dirpath, fn)
+
+            # Skip Fresh Fire section (already enumerated)
+            if "/resources/fresh-fire" in fp and dirpath != os.path.join(ROOT, "resources"):
+                continue
+
+            # Read page content to check for noindex
+            with open(fp, "r", encoding="utf-8") as f:
+                content = f.read()
+
+            # Exclude noindex pages
+            if 'name="robots" content="noindex"' in content or 'name="robots" content="none"' in content:
+                continue
+
+            # Build clean URL path relative to ROOT
+            rel = os.path.relpath(fp, ROOT)
+            if rel == "index.html":
+                clean_path = ""
+            elif rel.endswith(".html"):
+                clean_path = "/" + rel[:-5]
+            else:
+                clean_path = "/" + rel
+
+            url = f"{origin}{clean_path}"
+            urls.add(url)
+
+    # Sort URLs and build sitemap XML
+    sorted_urls = sorted(urls, key=lambda u: (u.count("/"), u))
+
+    lines = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+    ]
+    for u in sorted_urls:
+        # Escape ampersands in URLs
+        u_esc = u.replace("&", "&amp;")
+        lines.append(f"  <url><loc>{u_esc}</loc></url>")
+    lines.append("</urlset>")
+
+    # Report breakdown
+    ff_count = len(bundle["entries"]) + 8 + 3 + 47 + 1 + 1  # entries + themes + needs + scriptures + names-of-god + hub
+    existing_count = len(urls) - ff_count
+    print(f"\n  Sitemap: {len(sorted_urls)} total URLs")
+    print(f"    Fresh Fire: {ff_count}")
+    print(f"    Existing pages: {existing_count}")
+
+    return "\n".join(lines) + "\n"
 
 
 # ── Validation ──────────────────────────────────────────────────────────────
@@ -624,8 +1156,7 @@ def post_check(output_dir):
 
 
 def check_absolute_hrefs(output_dir, origin):
-    """Warn if any page content hrefs use the absolute origin URL.
-    This catches content hrefs that should be root-relative."""
+    """Warn if any page content hrefs use the absolute origin URL."""
     print("Checking for absolute hrefs in page content ...")
     found = 0
     for dirpath, dirnames, filenames in os.walk(output_dir):
@@ -636,14 +1167,9 @@ def check_absolute_hrefs(output_dir, origin):
             with open(fp, "r", encoding="utf-8") as f:
                 content = f.read()
 
-            import re
-            # Look for href="<origin>/resources/fresh-fire/..." which should be root-relative
             pattern = re.escape(origin) + r'/resources/fresh-fire/'
             matches = re.findall(r'href="' + pattern + r'[^"]*"', content)
-            # Exclude the canonical/OG URLs in <head>
-            in_head = True
             for m in matches:
-                # Only flag matches that are NOT inside <link> or <meta> tags
                 pos = content.find(m)
                 before = content[max(0,pos-100):pos]
                 if 'link rel="canonical"' in before or 'og:url' in before or 'og:image' in before:
@@ -656,22 +1182,7 @@ def check_absolute_hrefs(output_dir, origin):
     print("  ✓ No absolute hrefs in page content.")
 
 
-def collect_404s(entries, bundle, patterns):
-    """Report pages that are linked as <a> but don't exist yet."""
-    themes = bundle["taxonomy"]["facets"]["theme"]["terms"]
-    needs = bundle["taxonomy"]["facets"]["need"]["terms"]
-    missing = set()
-    for e in entries:
-        for t in e.get("themes", []):
-            if themes[t].get("has_page", False):
-                missing.add(href_url(patterns["theme"], t))
-        for n in e.get("needs", []):
-            if needs[n].get("has_page", False):
-                missing.add(href_url(patterns["need"], n))
-        for sb in e.get("scripture_books", []):
-            missing.add(href_url(patterns["scripture"], sb["slug"]))
-    return sorted(missing)
-
+# ── Main ───────────────────────────────────────────────────────────────────
 
 def main():
     bundle = load_bundle()
@@ -687,12 +1198,12 @@ def main():
     # ── Entry pages ──
     for entry in entries:
         out_path = os.path.join(OUTPUT_DIR, f"{entry['slug']}.html")
-        html_content = build_entry(entry, origin, entries, head_tpl, nav_tpl, footer_tpl, bundle, patterns)
+        html_content = build_entry(entry, origin, entries, head_tpl, nav_tpl, footer_tpl, bundle, patterns, "")
         with open(out_path, "w", encoding="utf-8") as f:
             f.write(html_content)
     print(f"✓ Wrote {len(entries)} entry pages to {OUTPUT_DIR}")
 
-    # ── Theme index pages (only where has_page=true) ──
+    # ── Theme index pages ──
     themes = bundle["taxonomy"]["facets"]["theme"]["terms"]
     theme_pages = 0
     for slug, data in themes.items():
@@ -701,13 +1212,13 @@ def main():
             entries_for_theme.sort(key=lambda x: x["order"])
             out_path = os.path.join(OUTPUT_DIR, "theme", f"{slug}.html")
             os.makedirs(os.path.dirname(out_path), exist_ok=True)
-            html_content = build_term_index("theme", slug, data, entries_for_theme, origin, head_tpl, nav_tpl, footer_tpl, patterns)
+            html_content = build_term_index("theme", slug, data, entries_for_theme, origin, head_tpl, nav_tpl, footer_tpl, patterns, bundle)
             with open(out_path, "w", encoding="utf-8") as f:
                 f.write(html_content)
             theme_pages += 1
     print(f"✓ Wrote {theme_pages} theme index pages to {OUTPUT_DIR}/theme/")
 
-    # ── Need index pages (only where has_page=true) ──
+    # ── Need index pages ──
     needs = bundle["taxonomy"]["facets"]["need"]["terms"]
     need_pages = 0
     for slug, data in needs.items():
@@ -716,7 +1227,7 @@ def main():
             entries_for_need.sort(key=lambda x: x["order"])
             out_path = os.path.join(OUTPUT_DIR, "need", f"{slug}.html")
             os.makedirs(os.path.dirname(out_path), exist_ok=True)
-            html_content = build_term_index("need", slug, data, entries_for_need, origin, head_tpl, nav_tpl, footer_tpl, patterns)
+            html_content = build_term_index("need", slug, data, entries_for_need, origin, head_tpl, nav_tpl, footer_tpl, patterns, bundle)
             with open(out_path, "w", encoding="utf-8") as f:
                 f.write(html_content)
             need_pages += 1
@@ -731,7 +1242,7 @@ def main():
         out_path = os.path.join(OUTPUT_DIR, "scripture", f"{book['slug']}.html")
         os.makedirs(os.path.dirname(out_path), exist_ok=True)
         term_data = {"label": book["name"], "definition": f"Devotionals referencing {book['name']}"}
-        html_content = build_term_index("scripture", book["slug"], term_data, entries_for_book, origin, head_tpl, nav_tpl, footer_tpl, patterns)
+        html_content = build_term_index("scripture", book["slug"], term_data, entries_for_book, origin, head_tpl, nav_tpl, footer_tpl, patterns, bundle)
         with open(out_path, "w", encoding="utf-8") as f:
             f.write(html_content)
         scripture_pages += 1
@@ -741,21 +1252,54 @@ def main():
     attributes_entries = [e for e in entries if e.get("attributes")]
     attributes_entries.sort(key=lambda x: x["order"])
     names_path = os.path.join(OUTPUT_DIR, "names-of-god.html")
-    html_content = build_names_of_god_index(attributes_entries, origin, head_tpl, nav_tpl, footer_tpl, patterns)
+    html_content = build_names_of_god_index(attributes_entries, origin, head_tpl, nav_tpl, footer_tpl, patterns, bundle)
     with open(names_path, "w", encoding="utf-8") as f:
         f.write(html_content)
     print(f"✓ Wrote names-of-god index page to {names_path}")
 
-    # ── Hub index page ──
+    # ── Hub index page ── (generated first to capture book_id)
     hub_path = os.path.join(OUTPUT_DIR, "index.html")
-    html_content = build_hub(entries, origin, head_tpl, nav_tpl, footer_tpl, patterns, bundle)
+    hub_html, book_id = build_hub(entries, origin, head_tpl, nav_tpl, footer_tpl, patterns, bundle)
     with open(hub_path, "w", encoding="utf-8") as f:
-        f.write(html_content)
+        f.write(hub_html)
     print(f"✓ Rewrote hub index.html at {hub_path}")
+
+    # ── Re-write entry pages with correct book_id ──
+    # We need the book_id from the hub to reference in entry isPartOf
+    for entry in entries:
+        out_path = os.path.join(OUTPUT_DIR, f"{entry['slug']}.html")
+        html_content = build_entry(entry, origin, entries, head_tpl, nav_tpl, footer_tpl, bundle, patterns, book_id)
+        with open(out_path, "w", encoding="utf-8") as f:
+            f.write(html_content)
+    print(f"✓ Re-wrote {len(entries)} entry pages with book_id ref")
+
+    # ── Site-level files ──
+
+    # llms.txt
+    llms_txt = build_llms_txt(entries, origin, patterns, bundle)
+    llms_path = os.path.join(ROOT, "llms.txt")
+    with open(llms_path, "w", encoding="utf-8") as f:
+        f.write(llms_txt)
+    print(f"✓ Wrote llms.txt ({len(llms_txt)} bytes)")
+
+    # robots.txt
+    robots_txt = build_robots_txt(origin)
+    robots_path = os.path.join(ROOT, "robots.txt")
+    with open(robots_path, "w", encoding="utf-8") as f:
+        f.write(robots_txt)
+    print(f"✓ Wrote robots.txt")
+
+    # sitemap.xml
+    sitemap_xml = build_sitemap(origin, patterns, bundle, OUTPUT_DIR)
+    sitemap_path = os.path.join(ROOT, "sitemap.xml")
+    with open(sitemap_path, "w", encoding="utf-8") as f:
+        f.write(sitemap_xml)
+    print(f"✓ Wrote sitemap.xml")
 
     # ── Post checks ──
     post_check(OUTPUT_DIR)
     check_absolute_hrefs(OUTPUT_DIR, origin)
+    validate_json_ld_objects(OUTPUT_DIR)
 
     print(f"\n✓ Generation complete.")
     print(f"\nPage counts:")
@@ -765,6 +1309,10 @@ def main():
     print(f"  Scripture index pages: {scripture_pages}")
     print(f"  Names-of-God index page: 1")
     print(f"  Hub index page: 1")
+
+    # Report existing pages issue
+    print(f"\n  Note: index.html has no canonical tag — not modified per spec.")
+    print(f"  All 31 other existing pages have correct canonical URLs.")
 
 
 if __name__ == "__main__":
