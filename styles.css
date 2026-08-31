@@ -2578,6 +2578,73 @@ footer {
   .branch-hero { min-height: 35vh; padding: 6rem 1.5rem 3rem; }
 }
 
+/* ─── FRESH FIRE ENTRY LIST ─── */
+.ff-entry-list {
+  list-style: none;
+  padding: 0;
+  margin: 2rem 0;
+}
+
+.ff-entry-list li {
+  margin: 0;
+  border-bottom: 1px solid rgba(245, 166, 35, 0.08);
+}
+
+.ff-entry-list li:last-child {
+  border-bottom: none;
+}
+
+.ff-entry-list li a {
+  display: block;
+  padding: 1.25rem 0;
+  text-decoration: none;
+  color: var(--cream-muted);
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 0.95rem;
+  line-height: 1.65;
+  transition: all 0.4s var(--ease-out-expo);
+  position: relative;
+}
+
+.ff-entry-list li a::after {
+  content: '→';
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0;
+  transition: opacity 0.4s var(--ease-out-expo), transform 0.4s var(--ease-out-expo);
+  font-size: 1.3rem;
+  line-height: 1;
+  color: var(--flame-orange);
+}
+
+.ff-entry-list li a:hover {
+  color: var(--flame-orange);
+  padding-right: 2rem;
+}
+
+.ff-entry-list li a:hover::after {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+}
+
+.ff-entry-list li a strong {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.15rem;
+  color: var(--white);
+  display: block;
+  margin-bottom: 0.25rem;
+  transition: color 0.4s var(--ease-out-expo);
+}
+
+.ff-entry-list li a:hover strong {
+  color: var(--flame-orange);
+}
+
+
 @media (max-width: 480px) {
   .branches-grid { grid-template-columns: 1fr; }
 }
