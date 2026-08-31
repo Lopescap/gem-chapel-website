@@ -466,10 +466,13 @@ def build_hub(all_entries, origin, head_tpl, nav_tpl, footer_tpl, patterns, bund
   </div>
 </section>
 
-<section class="search-section">
-  <div class="search-container">
-    <input type="text" id="searchInput" placeholder="Search devotionals...">
-    <div id="searchResults"></div>
+<section class="ff-search-section">
+  <div class="ff-search-inner">
+    <div class="ff-search-bar">
+      <svg class="ff-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      <input type="text" id="ff-search-input" class="ff-search-input" placeholder="Search devotionals...">
+    </div>
+    <div id="ff-results"></div>
   </div>
 </section>"""
 
