@@ -454,7 +454,7 @@ def build_hub_navigation(patterns, bundle):
 
 
 def build_hub(all_entries, origin, head_tpl, nav_tpl, footer_tpl, patterns, bundle):
-    """Build the main hub index.html page with all entries and navigation."""
+    """Build the main hub index.html page with featured cards, numbered list, search, and navigation."""
     p = patterns
     canonical = abs_url(p["hub"], origin)
     head = fill_head("Fresh Fire for Today", "Search and explore daily devotional readings from the Fresh Fire for Today series by Great Expectations Ministries.", canonical, head_tpl)
@@ -476,16 +476,49 @@ def build_hub(all_entries, origin, head_tpl, nav_tpl, footer_tpl, patterns, bund
   </div>
 </section>"""
 
-    items = []
-    for entry in all_entries:
+    # Featured section — 4 starter cards (entries 0-3)
+    featured_entries = all_entries[:4]
+    featured_cards = []
+    for entry in featured_entries:
         item_title = esc(entry["title"])
         item_summary = esc(entry["summary"]) if entry.get("summary") else ""
         entry_url = href_url(p["entry"], entry["slug"])
-        items.append(f'      <li><a href="{entry_url}"><strong>{item_title}</strong><br>{item_summary}</a></li>')
-    entries_html = (
-        '    <ul class="ff-entry-list">\n'
-        + "\n".join(items) +
-        '\n    </ul>\n'
+        featured_cards.append(
+            f'      <a href="{entry_url}" class="ff-featured-card">'
+            f'<h2 class="ff-featured-title">{item_title}</h2>'
+            f'<p class="ff-featured-summary">{item_summary}</p>'
+            f'<span class="ff-featured-link">Read Devotional →</span>'
+            f'</a>'
+        )
+    featured_html = (
+        '<section class="ff-featured-section">\n'
+        f'  <h2 class="ff-featured-heading">Need Fresh Fire Today?</h2>\n'
+        f'  <p class="ff-featured-subtitle">Begin with these devotional.</p>\n'
+        f'  <div class="ff-featured-grid">\n'
+        + "\n".join(featured_cards) +
+        '\n  </div>\n'
+        '</section>'
+    )
+
+    # Numbered list — 20 entries (entries 4-23, orders 5-24)
+    numbered_entries = all_entries[4:24]
+    numbered_items = []
+    for entry in numbered_entries:
+        item_title = esc(entry["title"])
+        entry_url = href_url(p["entry"], entry["slug"])
+        order = entry["order"]
+        numbered_items.append(
+            f'    <li class="ff-numbered-item">'
+            f'<span class="ff-number">{order}</span>'
+            f'<a href="{entry_url}" class="ff-numbered-link">{item_title}</a>'
+            f'</li>'
+        )
+    numbered_html = (
+        '<section class="ff-numbered-section">\n'
+        f'  <ol class="ff-numbered-list">\n'
+        + "\n".join(numbered_items) +
+        '\n  </ol>\n'
+        '</section>'
     )
 
     nav_block = build_hub_navigation(p, bundle)
@@ -498,10 +531,13 @@ def build_hub(all_entries, origin, head_tpl, nav_tpl, footer_tpl, patterns, bund
 
 {hero_section}
 
+{featured_html}
+
+{numbered_html}
+
 <section class="article-body-section">
   <article>
     <div class="article-body-content">
-{entries_html}
 {nav_block}
     </div>
   </article>
