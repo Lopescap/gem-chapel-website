@@ -43,8 +43,22 @@ def load_templates():
     return head, nav, footer
 
 
-def resolve_url(pattern, origin, slug=None):
-    """Resolve a URL from a url_patterns template, replacing {origin} and optionally {slug}."""
+# ── URL helpers ────────────────────────────────────────────────────────────
+
+def href_url(pattern, slug=None):
+    """Root-relative URL for href attributes in page content.
+    Replaces {origin} with empty string so links stay on the current domain.
+    """
+    url = pattern.replace("{origin}", "")
+    if slug is not None:
+        url = url.replace("{slug}", slug)
+    return url
+
+
+def abs_url(pattern, origin, slug=None):
+    """Absolute URL for canonical/OG/JSON-LD use.
+    Replaces {origin} with the actual origin string.
+    """
     url = pattern.replace("{origin}", origin)
     if slug is not None:
         url = url.replace("{slug}", slug)
@@ -80,22 +94,23 @@ def render_tag(label, url=None):
     return f'      <span class="ff-tag">{label}</span>'
 
 
+HUB_HREF = None  # set at runtime in main()
+
+
 def build_entry(entry, origin, entries, head_tpl, nav_tpl, footer_tpl, bundle, patterns):
     """Build one devotional entry page per Prompt 3 spec."""
-    # 1. Head
-    canonical_url = resolve_url(patterns["entry"], origin, entry["slug"])
+    p = patterns
+    # Head — canonical URLs stay absolute
+    canonical_url = abs_url(p["entry"], origin, entry["slug"])
     meta_desc = entry["summary"][:160]
     head = fill_head(entry["title"], meta_desc, canonical_url, head_tpl)
 
-    # 2. H1
     h1 = esc(entry["title"])
 
-    # 3. Summary
     summary_html = ""
     if entry.get("summary"):
         summary_html = f'    <p class="ff-in-short"><strong>In short:</strong> {esc(entry["summary"])}</p>\n'
 
-    # 4. Key scripture blockquote (omitted when key_scripture is empty)
     ks_html = ""
     ks_ref = entry.get("key_scripture", "")
     ks_text = entry.get("key_scripture_text", "")
@@ -107,10 +122,8 @@ def build_entry(entry, origin, entries, head_tpl, nav_tpl, footer_tpl, bundle, p
     </div>
 """
 
-    # 5. Blocks
     blocks_html = render_blocks(entry.get("blocks", []))
 
-    # 6. Prayer & Confession
     prayer_html = ""
     if entry.get("prayer"):
         prayer_html = f"""    <div class="ff-prayer">
@@ -126,14 +139,13 @@ def build_entry(entry, origin, entries, head_tpl, nav_tpl, footer_tpl, bundle, p
     </div>
 """
 
-    # 7. Scriptures referenced — all 47 books get pages
     scriptures_html = ""
     scripture_books = entry.get("scripture_books", [])
     if scripture_books:
         items = []
         for sb in scripture_books:
             name = esc(sb.get("name", ""))
-            book_url = resolve_url(patterns["scripture"], origin, sb["slug"])
+            book_url = href_url(p["scripture"], sb["slug"])
             items.append(f'        <li><a href="{book_url}">{name}</a></li>')
         scriptures_html = (
             '    <div class="ff-scriptures">\n'
@@ -144,7 +156,6 @@ def build_entry(entry, origin, entries, head_tpl, nav_tpl, footer_tpl, bundle, p
             '    </div>\n'
         )
 
-    # 8. Series
     series_html = ""
     if entry.get("series"):
         s_name = entry["series"]
@@ -153,13 +164,13 @@ def build_entry(entry, origin, entries, head_tpl, nav_tpl, footer_tpl, bundle, p
         siblings = []
         for s in bundle["indexes"]["series"]:
             if s["name"] == s_name:
-                for p in s["parts"]:
-                    if p["slug"] != entry["slug"]:
-                        siblings.append(p)
+                for p_sib in s["parts"]:
+                    if p_sib["slug"] != entry["slug"]:
+                        siblings.append(p_sib)
                 break
         series_items = ""
         for sib in siblings:
-            sib_url = resolve_url(patterns["entry"], origin, sib["slug"])
+            sib_url = href_url(p["entry"], sib["slug"])
             series_items += f'        <li><a href="{sib_url}">{esc(sib["title"])}</a></li>\n'
         series_html = (
             f'    <div class="ff-series">\n'
@@ -171,7 +182,6 @@ def build_entry(entry, origin, entries, head_tpl, nav_tpl, footer_tpl, bundle, p
             f'    </div>\n'
         )
 
-    # 9. Tag chips — link only when has_page is true
     themes = bundle["taxonomy"]["facets"]["theme"]["terms"]
     needs = bundle["taxonomy"]["facets"]["need"]["terms"]
 
@@ -179,14 +189,14 @@ def build_entry(entry, origin, entries, head_tpl, nav_tpl, footer_tpl, bundle, p
     for t_slug in entry.get("themes", []):
         label = esc(themes[t_slug]["label"])
         if themes[t_slug].get("has_page", False):
-            tag_url = resolve_url(patterns["theme"], origin, t_slug)
+            tag_url = href_url(p["theme"], t_slug)
             tag_items.append(render_tag(label, tag_url))
         else:
             tag_items.append(render_tag(label))
     for n_slug in entry.get("needs", []):
         label = esc(needs[n_slug]["label"])
         if needs[n_slug].get("has_page", False):
-            tag_url = resolve_url(patterns["need"], origin, n_slug)
+            tag_url = href_url(p["need"], n_slug)
             tag_items.append(render_tag(label, tag_url))
         else:
             tag_items.append(render_tag(label))
@@ -195,7 +205,6 @@ def build_entry(entry, origin, entries, head_tpl, nav_tpl, footer_tpl, bundle, p
     if tag_items:
         tags_html = '    <div class="ff-tags">\n' + "\n".join(tag_items) + "\n    </div>\n"
 
-    # 10. Previous / Next by order
     current_order = entry["order"]
     prev_entry = next_entry = None
     for e in entries:
@@ -206,10 +215,10 @@ def build_entry(entry, origin, entries, head_tpl, nav_tpl, footer_tpl, bundle, p
 
     prev_link = next_link = ""
     if prev_entry:
-        prev_url = resolve_url(patterns["entry"], origin, prev_entry["slug"])
+        prev_url = href_url(p["entry"], prev_entry["slug"])
         prev_link = f'      <a href="{prev_url}" class="ff-prev">&larr; {esc(prev_entry["title"])}</a>\n'
     if next_entry:
-        next_url = resolve_url(patterns["entry"], origin, next_entry["slug"])
+        next_url = href_url(p["entry"], next_entry["slug"])
         next_link = f'      <a href="{next_url}" class="ff-next">{esc(next_entry["title"])} &rarr;</a>\n'
 
     prev_next = ""
@@ -218,7 +227,8 @@ def build_entry(entry, origin, entries, head_tpl, nav_tpl, footer_tpl, bundle, p
 {prev_link}{next_link}    </nav>
 """
 
-    # Assemble
+    hub_href = href_url(p["hub"])
+
     page = f"""<!DOCTYPE html>
 <html lang="en">
 {head}
@@ -228,7 +238,7 @@ def build_entry(entry, origin, entries, head_tpl, nav_tpl, footer_tpl, bundle, p
 <section class="article-hero">
   <div class="article-hero-bg"></div>
   <div class="article-hero-content">
-    <a href="{resolve_url(patterns['hub'], origin)}" class="article-back-link">&larr; All Fresh Fire</a>
+    <a href="{hub_href}" class="article-back-link">&larr; All Fresh Fire</a>
     <h1 class="article-hero-title">{h1}</h1>
   </div>
 </section>
@@ -237,7 +247,7 @@ def build_entry(entry, origin, entries, head_tpl, nav_tpl, footer_tpl, bundle, p
   <article>
     <div class="article-body-content">
 {summary_html}{ks_html}{blocks_html}{prayer_html}{confession_html}{scriptures_html}{series_html}{tags_html}{prev_next}
-      <a href="{resolve_url(patterns['hub'], origin)}" class="btn-outline" style="margin-top:2rem;">&larr; All Fresh Fire</a>
+      <a href="{hub_href}" class="btn-outline" style="margin-top:2rem;">&larr; All Fresh Fire</a>
     </div>
   </article>
 </section>
@@ -252,36 +262,34 @@ def build_entry(entry, origin, entries, head_tpl, nav_tpl, footer_tpl, bundle, p
 
 def build_term_index(term_type, term_slug, term_data, entries_for_term, origin, head_tpl, nav_tpl, footer_tpl, patterns):
     """Build an index page for a theme, need, or scripture term."""
-    # Head
+    p = patterns
+    canonical = abs_url(p[term_type], origin, term_slug)
     title = term_data["label"]
     meta_desc = term_data.get("definition", "")[:160] if term_data.get("definition") else f"Devotionals about {term_data['label']}"
-    canonical_url = resolve_url(patterns[term_type], origin, term_slug)
-    head = fill_head(title, meta_desc, canonical_url, head_tpl)
-    
-    # Hero section
+    head = fill_head(title, meta_desc, canonical, head_tpl)
+
     hero_title = esc(title)
-    
-    # Definition paragraph
+
     definition_html = ""
     if term_data.get("definition"):
         definition_html = f'    <p>{esc(term_data["definition"])}</p>\n'
-    
-    # Entries list ordered by entry order
+
     entries_html = ""
     if entries_for_term:
         items = []
         for entry in entries_for_term:
             item_title = esc(entry["title"])
             item_summary = esc(entry["summary"]) if entry.get("summary") else ""
-            entry_url = resolve_url(patterns["entry"], origin, entry["slug"])
+            entry_url = href_url(p["entry"], entry["slug"])
             items.append(f'      <li><a href="{entry_url}"><strong>{item_title}</strong><br>{item_summary}</a></li>')
         entries_html = (
             '    <ul class="ff-entry-list">\n'
             + "\n".join(items) +
             '\n    </ul>\n'
         )
-    
-    # Assemble page
+
+    hub_href = href_url(p["hub"])
+
     page = f"""<!DOCTYPE html>
 <html lang="en">
 {head}
@@ -291,7 +299,7 @@ def build_term_index(term_type, term_slug, term_data, entries_for_term, origin, 
 <section class="article-hero">
   <div class="article-hero-bg"></div>
   <div class="article-hero-content">
-    <a href="{resolve_url(patterns['hub'], origin)}" class="article-back-link">&larr; All Fresh Fire</a>
+    <a href="{hub_href}" class="article-back-link">&larr; All Fresh Fire</a>
     <h1 class="article-hero-title">{hero_title}</h1>
   </div>
 </section>
@@ -300,7 +308,7 @@ def build_term_index(term_type, term_slug, term_data, entries_for_term, origin, 
   <article>
     <div class="article-body-content">
 {definition_html}{entries_html}
-      <a href="{resolve_url(patterns['hub'], origin)}" class="btn-outline" style="margin-top:2rem;">&larr; All Fresh Fire</a>
+      <a href="{hub_href}" class="btn-outline" style="margin-top:2rem;">&larr; All Fresh Fire</a>
     </div>
   </article>
 </section>
@@ -315,34 +323,30 @@ def build_term_index(term_type, term_slug, term_data, entries_for_term, origin, 
 
 def build_names_of_god_index(attributes_entries, origin, head_tpl, nav_tpl, footer_tpl, patterns):
     """Build the names-of-god index page with all 9 attribute entries."""
-    # Head
-    title = "Names of God"
-    meta_desc = "Devotionals exploring the names and attributes of God"
-    canonical_url = resolve_url(patterns["names_of_god"], origin)
-    head = fill_head(title, meta_desc, canonical_url, head_tpl)
-    
-    # Hero section
+    p = patterns
+    canonical = abs_url(p["names_of_god"], origin)
+    head = fill_head("Names of God", "Devotionals exploring the names and attributes of God", canonical, head_tpl)
+
     hero_title = "Names of God"
-    
-    # Definition paragraph (using first attribute's definition or generic)
+
     definition_html = '    <p>Exploring the divine nature and attributes of God through devotionals focused on His names and characteristics.</p>\n'
-    
-    # Entries list ordered by entry order
+
     entries_html = ""
     if attributes_entries:
         items = []
         for entry in attributes_entries:
             item_title = esc(entry["title"])
             item_summary = esc(entry["summary"]) if entry.get("summary") else ""
-            entry_url = resolve_url(patterns["entry"], origin, entry["slug"])
+            entry_url = href_url(p["entry"], entry["slug"])
             items.append(f'      <li><a href="{entry_url}"><strong>{item_title}</strong><br>{item_summary}</a></li>')
         entries_html = (
             '    <ul class="ff-entry-list">\n'
             + "\n".join(items) +
             '\n    </ul>\n'
         )
-    
-    # Assemble page
+
+    hub_href = href_url(p["hub"])
+
     page = f"""<!DOCTYPE html>
 <html lang="en">
 {head}
@@ -352,7 +356,7 @@ def build_names_of_god_index(attributes_entries, origin, head_tpl, nav_tpl, foot
 <section class="article-hero">
   <div class="article-hero-bg"></div>
   <div class="article-hero-content">
-    <a href="{resolve_url(patterns['hub'], origin)}" class="article-back-link">&larr; All Fresh Fire</a>
+    <a href="{hub_href}" class="article-back-link">&larr; All Fresh Fire</a>
     <h1 class="article-hero-title">{hero_title}</h1>
   </div>
 </section>
@@ -361,7 +365,7 @@ def build_names_of_god_index(attributes_entries, origin, head_tpl, nav_tpl, foot
   <article>
     <div class="article-body-content">
 {definition_html}{entries_html}
-      <a href="{resolve_url(patterns['hub'], origin)}" class="btn-outline" style="margin-top:2rem;">&larr; All Fresh Fire</a>
+      <a href="{hub_href}" class="btn-outline" style="margin-top:2rem;">&larr; All Fresh Fire</a>
     </div>
   </article>
 </section>
@@ -374,24 +378,87 @@ def build_names_of_god_index(attributes_entries, origin, head_tpl, nav_tpl, foot
     return page
 
 
-def build_hub_index(all_entries, origin, head_tpl, nav_tpl, footer_tpl, patterns, bundle):
+def build_hub_navigation(patterns, bundle):
+    """Build navigation block linking to theme, need, scripture, and names-of-god pages.
+    Uses root-relative hrefs."""
+    p = patterns
+    themes = bundle["taxonomy"]["facets"]["theme"]["terms"]
+    needs = bundle["taxonomy"]["facets"]["need"]["terms"]
+
+    theme_links = []
+    for slug, data in themes.items():
+        if data.get("has_page", False):
+            url = href_url(p["theme"], slug)
+            label = esc(data["label"])
+            theme_links.append(f'      <li><a href="{url}">{label}</a></li>')
+
+    theme_nav = ""
+    if theme_links:
+        theme_nav = (
+            '    <div class="ff-hub-nav">\n'
+            '      <h3>Themes</h3>\n'
+            '      <ul>\n'
+            + "\n".join(theme_links) +
+            '\n      </ul>\n'
+            '    </div>\n'
+        )
+
+    need_links = []
+    for slug, data in needs.items():
+        if data.get("has_page", False):
+            url = href_url(p["need"], slug)
+            label = esc(data["label"])
+            need_links.append(f'      <li><a href="{url}">{label}</a></li>')
+
+    need_nav = ""
+    if need_links:
+        need_nav = (
+            '    <div class="ff-hub-nav">\n'
+            '      <h3>Needs</h3>\n'
+            '      <ul>\n'
+            + "\n".join(need_links) +
+            '\n      </ul>\n'
+            '    </div>\n'
+        )
+
+    scriptures = bundle["indexes"]["scripture_books"]
+    scripture_links = []
+    for book in scriptures:
+        url = href_url(p["scripture"], book["slug"])
+        label = esc(book["name"])
+        scripture_links.append(f'      <li><a href="{url}">{label}</a></li>')
+
+    scripture_nav = ""
+    if scripture_links:
+        scripture_nav = (
+            '    <div class="ff-hub-nav">\n'
+            '      <h3>Scriptures</h3>\n'
+            '      <ul>\n'
+            + "\n".join(scripture_links) +
+            '\n      </ul>\n'
+            '    </div>\n'
+        )
+
+    names_url = href_url(p["names_of_god"])
+    names_nav = f'    <div class="ff-hub-nav">\n      <h3><a href="{names_url}">Names of God</a></h3>\n    </div>\n'
+
+    nav_block = (
+        '    <div class="ff-hub-navigation">\n'
+        f'{theme_nav}'
+        f'{need_nav}'
+        f'{scripture_nav}'
+        f'{names_nav}'
+        '    </div>\n'
+    )
+    return nav_block
+
+
+def build_hub(all_entries, origin, head_tpl, nav_tpl, footer_tpl, patterns, bundle):
     """Build the main hub index.html page with all entries and navigation."""
-    # Load the existing hub template to preserve hero and search section
-    hub_template_path = os.path.join(OUTPUT_DIR, "index.html")
-    with open(hub_template_path, "r", encoding="utf-8") as f:
-        hub_content = f.read()
-    
-    # Extract the hero and search section (everything before the results container)
-    # This assumes the template has a specific structure we need to preserve
-    # For now, let's create a new hub page with the required structure
-    
-    # Head
-    title = "Fresh Fire for Today"
-    meta_desc = "Search and explore daily devotional readings from the Fresh Fire for Today series by Great Expectations Ministries."
-    canonical_url = resolve_url(patterns["hub"], origin)
-    head = fill_head(title, meta_desc, canonical_url, head_tpl)
-    
-    # Hero section (preserving existing structure)
+    p = patterns
+    canonical = abs_url(p["hub"], origin)
+    head = fill_head("Fresh Fire for Today", "Search and explore daily devotional readings from the Fresh Fire for Today series by Great Expectations Ministries.", canonical, head_tpl)
+
     hero_section = """<section class="article-hero">
   <div class="article-hero-bg"></div>
   <div class="article-hero-content">
@@ -405,26 +472,21 @@ def build_hub_index(all_entries, origin, head_tpl, nav_tpl, footer_tpl, patterns
     <div id="searchResults"></div>
   </div>
 </section>"""
-    
-    # Entries list - all 92 entries in order with title and summary
-    entries_html = ""
-    if all_entries:
-        items = []
-        for entry in all_entries:
-            item_title = esc(entry["title"])
-            item_summary = esc(entry["summary"]) if entry.get("summary") else ""
-            entry_url = resolve_url(patterns["entry"], origin, entry["slug"])
-            items.append(f'      <li><a href="{entry_url}"><strong>{item_title}</strong><br>{item_summary}</a></li>')
-        entries_html = (
-            '    <ul class="ff-entry-list">\n'
-            + "\n".join(items) +
-            '\n    </ul>\n'
-        )
-    
-    # Navigation block linking to theme, need, scripture, and names-of-god pages
-    nav_block = build_hub_navigation(origin, patterns, bundle)
-    
-    # Assemble page
+
+    items = []
+    for entry in all_entries:
+        item_title = esc(entry["title"])
+        item_summary = esc(entry["summary"]) if entry.get("summary") else ""
+        entry_url = href_url(p["entry"], entry["slug"])
+        items.append(f'      <li><a href="{entry_url}"><strong>{item_title}</strong><br>{item_summary}</a></li>')
+    entries_html = (
+        '    <ul class="ff-entry-list">\n'
+        + "\n".join(items) +
+        '\n    </ul>\n'
+    )
+
+    nav_block = build_hub_navigation(p, bundle)
+
     page = f"""<!DOCTYPE html>
 <html lang="en">
 {head}
@@ -449,83 +511,6 @@ def build_hub_index(all_entries, origin, head_tpl, nav_tpl, footer_tpl, patterns
 </html>
 """
     return page
-
-
-def build_hub_navigation(origin, patterns, bundle):
-    """Build navigation block linking to theme, need, scripture, and names-of-god pages."""
-    # Theme links (only those with has_page=true)
-    themes = bundle["taxonomy"]["facets"]["theme"]["terms"]
-    theme_links = []
-    for slug, data in themes.items():
-        if data.get("has_page", False):
-            url = resolve_url(patterns["theme"], origin, slug)
-            label = esc(data["label"])
-            theme_links.append(f'      <li><a href="{url}">{label}</a></li>')
-    
-    theme_nav = ""
-    if theme_links:
-        theme_nav = (
-            '    <div class="ff-hub-nav">\n'
-            '      <h3>Themes</h3>\n'
-            '      <ul>\n'
-            + "\n".join(theme_links) +
-            '\n      </ul>\n'
-            '    </div>\n'
-        )
-    
-    # Need links (only those with has_page=true)
-    needs = bundle["taxonomy"]["facets"]["need"]["terms"]
-    need_links = []
-    for slug, data in needs.items():
-        if data.get("has_page", False):
-            url = resolve_url(patterns["need"], origin, slug)
-            label = esc(data["label"])
-            need_links.append(f'      <li><a href="{url}">{label}</a></li>')
-    
-    need_nav = ""
-    if need_links:
-        need_nav = (
-            '    <div class="ff-hub-nav">\n'
-            '      <h3>Needs</h3>\n'
-            '      <ul>\n'
-            + "\n".join(need_links) +
-            '\n      </ul>\n'
-            '    </div>\n'
-        )
-    
-    # Scripture links (all books)
-    scriptures = bundle["indexes"]["scripture_books"]
-    scripture_links = []
-    for book in scriptures:
-        url = resolve_url(patterns["scripture"], origin, book["slug"])
-        label = esc(book["name"])
-        scripture_links.append(f'      <li><a href="{url}">{label}</a></li>')
-    
-    scripture_nav = ""
-    if scripture_links:
-        scripture_nav = (
-            '    <div class="ff-hub-nav">\n'
-            '      <h3>Scriptures</h3>\n'
-            '      <ul>\n'
-            + "\n".join(scripture_links) +
-            '\n      </ul>\n'
-            '    </div>\n'
-        )
-    
-    # Names of God link
-    names_url = resolve_url(patterns["names_of_god"], origin)
-    names_nav = f'    <div class="ff-hub-nav">\n      <h3><a href="{names_url}">Names of God</a></h3>\n    </div>\n'
-    
-    nav_block = (
-        '    <div class="ff-hub-navigation">\n'
-        f'{theme_nav}'
-        f'{need_nav}'
-        f'{scripture_nav}'
-        f'{names_nav}'
-        '    </div>\n'
-    )
-    
-    return nav_block
 
 
 # ── Validation ──────────────────────────────────────────────────────────────
@@ -599,7 +584,40 @@ def post_check(output_dir):
     print("✓ Post-check: no placeholder in output")
 
 
-def collect_404s(entries, bundle, origin, patterns):
+def check_absolute_hrefs(output_dir, origin):
+    """Warn if any page content hrefs use the absolute origin URL.
+    This catches content hrefs that should be root-relative."""
+    print("Checking for absolute hrefs in page content ...")
+    found = 0
+    for dirpath, dirnames, filenames in os.walk(output_dir):
+        for fn in filenames:
+            if not fn.endswith(".html"):
+                continue
+            fp = os.path.join(dirpath, fn)
+            with open(fp, "r", encoding="utf-8") as f:
+                content = f.read()
+
+            import re
+            # Look for href="<origin>/resources/fresh-fire/..." which should be root-relative
+            pattern = re.escape(origin) + r'/resources/fresh-fire/'
+            matches = re.findall(r'href="' + pattern + r'[^"]*"', content)
+            # Exclude the canonical/OG URLs in <head>
+            in_head = True
+            for m in matches:
+                # Only flag matches that are NOT inside <link> or <meta> tags
+                pos = content.find(m)
+                before = content[max(0,pos-100):pos]
+                if 'link rel="canonical"' in before or 'og:url' in before or 'og:image' in before:
+                    continue
+                found += 1
+                print(f"  ABSOLUTE HREF in {fp}: {m[:80]}...")
+    if found:
+        print(f"  FAIL: {found} content hrefs use absolute origin URL.", file=sys.stderr)
+        sys.exit(1)
+    print("  ✓ No absolute hrefs in page content.")
+
+
+def collect_404s(entries, bundle, patterns):
     """Report pages that are linked as <a> but don't exist yet."""
     themes = bundle["taxonomy"]["facets"]["theme"]["terms"]
     needs = bundle["taxonomy"]["facets"]["need"]["terms"]
@@ -607,12 +625,12 @@ def collect_404s(entries, bundle, origin, patterns):
     for e in entries:
         for t in e.get("themes", []):
             if themes[t].get("has_page", False):
-                missing.add(resolve_url(patterns["theme"], origin, t))
+                missing.add(href_url(patterns["theme"], t))
         for n in e.get("needs", []):
             if needs[n].get("has_page", False):
-                missing.add(resolve_url(patterns["need"], origin, n))
+                missing.add(href_url(patterns["need"], n))
         for sb in e.get("scripture_books", []):
-            missing.add(resolve_url(patterns["scripture"], origin, sb["slug"]))
+            missing.add(href_url(patterns["scripture"], sb["slug"]))
     return sorted(missing)
 
 
@@ -626,97 +644,80 @@ def main():
     entries = bundle["entries"]
 
     os.makedirs(OUTPUT_DIR, exist_ok=True)
-    
-    # Generate entry pages
+
+    # ── Entry pages ──
     for entry in entries:
         out_path = os.path.join(OUTPUT_DIR, f"{entry['slug']}.html")
         html_content = build_entry(entry, origin, entries, head_tpl, nav_tpl, footer_tpl, bundle, patterns)
         with open(out_path, "w", encoding="utf-8") as f:
             f.write(html_content)
-
     print(f"✓ Wrote {len(entries)} entry pages to {OUTPUT_DIR}")
-    
-    # Generate theme index pages (only where has_page=true)
+
+    # ── Theme index pages (only where has_page=true) ──
     themes = bundle["taxonomy"]["facets"]["theme"]["terms"]
     theme_pages = 0
     for slug, data in themes.items():
         if data.get("has_page", False):
-            # Find entries for this theme
             entries_for_theme = [e for e in entries if slug in e.get("themes", [])]
             entries_for_theme.sort(key=lambda x: x["order"])
-            
             out_path = os.path.join(OUTPUT_DIR, "theme", f"{slug}.html")
             os.makedirs(os.path.dirname(out_path), exist_ok=True)
-            
             html_content = build_term_index("theme", slug, data, entries_for_theme, origin, head_tpl, nav_tpl, footer_tpl, patterns)
             with open(out_path, "w", encoding="utf-8") as f:
                 f.write(html_content)
             theme_pages += 1
-
     print(f"✓ Wrote {theme_pages} theme index pages to {OUTPUT_DIR}/theme/")
-    
-    # Generate need index pages (only where has_page=true)
+
+    # ── Need index pages (only where has_page=true) ──
     needs = bundle["taxonomy"]["facets"]["need"]["terms"]
     need_pages = 0
     for slug, data in needs.items():
         if data.get("has_page", False):
-            # Find entries for this need
             entries_for_need = [e for e in entries if slug in e.get("needs", [])]
             entries_for_need.sort(key=lambda x: x["order"])
-            
             out_path = os.path.join(OUTPUT_DIR, "need", f"{slug}.html")
             os.makedirs(os.path.dirname(out_path), exist_ok=True)
-            
             html_content = build_term_index("need", slug, data, entries_for_need, origin, head_tpl, nav_tpl, footer_tpl, patterns)
             with open(out_path, "w", encoding="utf-8") as f:
                 f.write(html_content)
             need_pages += 1
-
     print(f"✓ Wrote {need_pages} need index pages to {OUTPUT_DIR}/need/")
-    
-    # Generate scripture index pages (one per book)
+
+    # ── Scripture index pages ──
     scriptures = bundle["indexes"]["scripture_books"]
     scripture_pages = 0
     for book in scriptures:
-        # Find entries for this scripture book
         entries_for_book = [e for e in entries if any(sb["slug"] == book["slug"] for sb in e.get("scripture_books", []))]
         entries_for_book.sort(key=lambda x: x["order"])
-        
         out_path = os.path.join(OUTPUT_DIR, "scripture", f"{book['slug']}.html")
         os.makedirs(os.path.dirname(out_path), exist_ok=True)
-        
-        # Create mock term data for scripture books
         term_data = {"label": book["name"], "definition": f"Devotionals referencing {book['name']}"}
         html_content = build_term_index("scripture", book["slug"], term_data, entries_for_book, origin, head_tpl, nav_tpl, footer_tpl, patterns)
         with open(out_path, "w", encoding="utf-8") as f:
             f.write(html_content)
         scripture_pages += 1
-
     print(f"✓ Wrote {scripture_pages} scripture index pages to {OUTPUT_DIR}/scripture/")
-    
-    # Generate names-of-god index page (all 9 attribute entries)
-    # Find entries that have attributes
+
+    # ── Names-of-God index page ──
     attributes_entries = [e for e in entries if e.get("attributes")]
     attributes_entries.sort(key=lambda x: x["order"])
-    
     names_path = os.path.join(OUTPUT_DIR, "names-of-god.html")
     html_content = build_names_of_god_index(attributes_entries, origin, head_tpl, nav_tpl, footer_tpl, patterns)
     with open(names_path, "w", encoding="utf-8") as f:
         f.write(html_content)
-    
     print(f"✓ Wrote names-of-god index page to {names_path}")
-    
-    # Rewrite hub index.html
+
+    # ── Hub index page ──
     hub_path = os.path.join(OUTPUT_DIR, "index.html")
-    html_content = build_hub_index(entries, origin, head_tpl, nav_tpl, footer_tpl, patterns, bundle)
+    html_content = build_hub(entries, origin, head_tpl, nav_tpl, footer_tpl, patterns, bundle)
     with open(hub_path, "w", encoding="utf-8") as f:
         f.write(html_content)
-    
     print(f"✓ Rewrote hub index.html at {hub_path}")
-    
-    post_check(OUTPUT_DIR)
 
-    # For Prompt 4, the 404 list should now be empty since we generated all required pages
+    # ── Post checks ──
+    post_check(OUTPUT_DIR)
+    check_absolute_hrefs(OUTPUT_DIR, origin)
+
     print(f"\n✓ Generation complete.")
     print(f"\nPage counts:")
     print(f"  Entry pages: {len(entries)}")
@@ -725,7 +726,6 @@ def main():
     print(f"  Scripture index pages: {scripture_pages}")
     print(f"  Names-of-God index page: 1")
     print(f"  Hub index page: 1")
-    print(f"\nAll required pages generated. 404 list should now be empty.")
 
 
 if __name__ == "__main__":
