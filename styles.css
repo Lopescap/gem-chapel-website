@@ -890,6 +890,69 @@ section {
   color: var(--cream-muted);
 }
 
+/* ─── FRESH FIRE ─── */
+.freshfire {
+  margin-bottom: 4rem;
+}
+
+.freshfire-card {
+  background: linear-gradient(145deg, rgba(245, 166, 35, 0.06), rgba(196, 65, 10, 0.04));
+  border: var(--border-glow);
+  border-radius: 24px;
+  padding: 3.5rem;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+}
+
+.freshfire-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(245, 166, 35, 0.03), transparent 50%);
+  pointer-events: none;
+}
+
+.freshfire-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--flame-gold), var(--flame-orange));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.5rem;
+  position: relative;
+}
+
+.freshfire-icon svg {
+  width: 30px;
+  height: 30px;
+  fill: var(--dark-bg);
+}
+
+.freshfire-title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(1.8rem, 3.5vw, 2.5rem);
+  color: var(--white);
+  margin-bottom: 1rem;
+}
+
+.freshfire-text {
+  font-size: 1.05rem;
+  line-height: 1.8;
+  color: var(--cream);
+  max-width: 600px;
+  margin: 0 auto 0.8rem;
+}
+
+@media (max-width: 768px) {
+  .freshfire-card { padding: 2.5rem 1.5rem; }
+}
+
 /* ─── RESOURCES / ARTICLES ─── */
 .resources { max-width: 1200px; margin: 0 auto; }
 .resources-header { margin-bottom: 4rem; }
