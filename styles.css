@@ -898,6 +898,7 @@ section {
   gap: 2rem;
 }
 
+/* Article cards as links */
 .article-card {
   background: var(--dark-card);
   border: var(--border-subtle);
@@ -905,6 +906,9 @@ section {
   overflow: hidden;
   transition: transform 0.5s var(--ease-out-expo), box-shadow 0.5s;
   cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+  display: block;
 }
 
 .article-card:hover {
@@ -1712,6 +1716,170 @@ section {
   .leader-hero-image { width: 180px; height: 180px; }
   .leader-detail { padding: 0 1.5rem 4rem; }
   .leader-detail-inner { padding: 2rem 1.5rem; }
+}
+
+/* ─── ARTICLE PAGES ─── */
+.article-hero {
+  position: relative;
+  min-height: 40vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8rem 2rem 4rem;
+  overflow: hidden;
+}
+
+.article-hero-bg {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 60% 50% at 50% 50%, rgba(196, 65, 10, 0.25), transparent 70%),
+    radial-gradient(ellipse 40% 35% at 30% 70%, rgba(245, 166, 35, 0.10), transparent 55%),
+    var(--dark-bg);
+}
+
+.article-hero-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 60% 50% at 50% 50%, rgba(232, 117, 26, 0.06), transparent 70%);
+  animation: ambientPulse 8s ease-in-out infinite;
+}
+
+.article-hero-content {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  max-width: 800px;
+}
+
+.article-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cream-muted);
+  text-decoration: none;
+  margin-bottom: 2rem;
+  transition: color 0.3s;
+}
+
+.article-back-link:hover {
+  color: var(--flame-gold);
+}
+
+.article-hero-category {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--flame-gold);
+  background: rgba(8, 6, 4, 0.85);
+  padding: 0.4rem 1rem;
+  border-radius: 100px;
+  margin-bottom: 1.5rem;
+}
+
+.article-hero-title {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(2.2rem, 5vw, 3.8rem);
+  line-height: 1.1;
+  color: var(--white);
+  text-shadow: 0 4px 60px rgba(254, 252, 248, 0.1);
+}
+
+.article-body-section {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 2rem 5rem;
+}
+
+.article-body-content {
+  background: var(--dark-card);
+  border: var(--border-subtle);
+  border-radius: 18px;
+  padding: 3rem;
+}
+
+.article-body-content p {
+  font-size: 1.05rem;
+  line-height: 1.85;
+  color: var(--cream);
+  margin-bottom: 1.2rem;
+}
+
+.article-body-content h2 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.8rem;
+  color: var(--white);
+  margin: 2.5rem 0 1rem;
+}
+
+.article-body-content h3 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.4rem;
+  color: var(--flame-gold);
+  margin: 2rem 0 0.8rem;
+}
+
+.article-body-content h4 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.15rem;
+  color: var(--cream);
+  margin: 1.8rem 0 0.6rem;
+}
+
+.article-body-content ul {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0;
+}
+
+.article-body-content ul li {
+  padding-left: 1.5rem;
+  position: relative;
+  font-size: 1.05rem;
+  line-height: 1.8;
+  color: var(--cream);
+  margin-bottom: 0.5rem;
+}
+
+.article-body-content ul li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.6rem;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--flame-gold);
+}
+
+.article-body-content blockquote {
+  border-left: 3px solid var(--flame-gold);
+  padding: 1.2rem 1.5rem;
+  margin: 1.5rem 0;
+  background: rgba(245, 166, 35, 0.04);
+  border-radius: 0 12px 12px 0;
+  font-style: italic;
+  font-size: 1rem;
+  line-height: 1.8;
+  color: var(--cream-muted);
+}
+
+@media (max-width: 768px) {
+  .article-hero { min-height: 35vh; padding: 6rem 1.5rem 3rem; }
+  .article-body-section { padding: 0 1.5rem 3rem; }
+  .article-body-content { padding: 2rem 1.5rem; }
 }
 
 /* ─── DONATE ─── */
