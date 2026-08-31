@@ -1,5 +1,5 @@
 <nav id="navbar">
-  <a href="/" class="nav-logo"><img src="/media/gem-logo.jpg" alt="GEM" class="nav-logo-img"></a>
+  <a href="/" class="nav-logo"><img src="/media/gem-logo.png" alt="GEM" class="nav-logo-img"></a>
   <ul class="nav-links" id="navLinks">
     <li><a href="/#about">About</a></li><li><a href="/#activities">Activities</a></li><li><a href="/#leadership">Leadership</a></li>
     <li><a href="/#resources" class="active">Resources</a></li><li><a href="/#books">Books</a></li><li><a href="/#branches">Branches</a></li>
