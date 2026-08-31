@@ -529,6 +529,11 @@ section {
   border-top: var(--border-subtle);
 }
 
+.about-read-more {
+  margin-top: 1rem;
+  display: inline-flex;
+}
+
 .about-grid {
   max-width: 1200px;
   margin: 0 auto;
@@ -1325,6 +1330,207 @@ section {
 
 .branch-nav-section .branches-header {
   margin-bottom: 3rem;
+}
+
+/* ─── ABOUT PAGE ─── */
+.about-hero {
+  position: relative;
+  min-height: 50vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8rem 2rem 4rem;
+  overflow: hidden;
+}
+
+.about-hero-bg {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 45%, rgba(196, 65, 10, 0.3), transparent 70%),
+    radial-gradient(ellipse 50% 45% at 25% 65%, rgba(245, 166, 35, 0.12), transparent 55%),
+    radial-gradient(ellipse 40% 35% at 80% 25%, rgba(139, 37, 0, 0.22), transparent 45%),
+    var(--dark-bg);
+}
+
+.about-hero-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 60% 50% at 50% 50%, rgba(232, 117, 26, 0.08), transparent 70%);
+  animation: ambientPulse 8s ease-in-out infinite;
+}
+
+.about-hero-content {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  max-width: 800px;
+}
+
+.about-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cream-muted);
+  text-decoration: none;
+  margin-bottom: 2rem;
+  transition: color 0.3s;
+}
+
+.about-back-link:hover {
+  color: var(--flame-gold);
+}
+
+.about-hero-title {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(2.5rem, 6vw, 4.5rem);
+  line-height: 1.05;
+  color: var(--white);
+  text-shadow: 0 4px 60px rgba(254, 252, 248, 0.1);
+  margin-bottom: 1.5rem;
+}
+
+.about-hero-scripture {
+  font-family: var(--font-accent);
+  font-size: 1.3rem;
+  font-style: italic;
+  color: var(--cream-muted);
+  line-height: 1.6;
+}
+
+/* About story sections */
+.about-story {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 2rem 5rem;
+}
+
+.about-story-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
+}
+
+.about-story-block {
+  background: var(--dark-card);
+  border: var(--border-subtle);
+  border-radius: 18px;
+  padding: 2.5rem;
+}
+
+.about-story-block .section-label {
+  margin-bottom: 1.5rem;
+}
+
+.about-story-text {
+  font-size: 1.05rem;
+  line-height: 1.85;
+  color: var(--cream);
+  margin-bottom: 1.2rem;
+}
+
+.about-story-text:last-child {
+  margin-bottom: 0;
+}
+
+.about-goals-list {
+  list-style: none;
+  counter-reset: goal-counter;
+  padding: 0;
+}
+
+.about-goals-list li {
+  counter-increment: goal-counter;
+  font-size: 1rem;
+  line-height: 1.8;
+  color: var(--cream);
+  padding-left: 2.5rem;
+  position: relative;
+  margin-bottom: 1rem;
+}
+
+.about-goals-list li::before {
+  content: counter(goal-counter);
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--flame-gold), var(--flame-orange));
+  color: var(--dark-bg);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 0.2rem;
+}
+
+.about-goals-list li:last-child {
+  margin-bottom: 0;
+}
+
+/* About CTA section */
+.about-cta {
+  background: var(--dark-surface);
+  border-top: var(--border-subtle);
+  position: relative;
+  overflow: hidden;
+  padding: 6rem 2rem;
+  text-align: center;
+}
+
+.about-cta::before {
+  content: '';
+  position: absolute;
+  top: -200px;
+  right: -200px;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(245, 166, 35, 0.07), transparent 70%);
+  pointer-events: none;
+  animation: donateGlow 10s ease-in-out infinite;
+}
+
+.about-cta-inner {
+  max-width: 700px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 2;
+}
+
+.about-cta-inner h2 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(2rem, 4vw, 3rem);
+  color: var(--white);
+  margin-bottom: 1.5rem;
+}
+
+.about-cta-inner p {
+  font-size: 1.05rem;
+  line-height: 1.8;
+  color: var(--cream-muted);
+  margin-bottom: 2rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .about-hero { min-height: 40vh; padding: 6rem 1.5rem 3rem; }
+  .about-story { padding: 0 1.5rem 3rem; }
+  .about-story-block { padding: 2rem 1.5rem; }
+  .about-cta { padding: 4rem 1.5rem; }
 }
 
 /* ─── DONATE ─── */
