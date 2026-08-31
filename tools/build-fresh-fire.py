@@ -861,16 +861,15 @@ def build_hub(all_entries, origin, head_tpl, nav_tpl, footer_tpl, patterns, bund
         '</section>'
     )
 
-    # Numbered list — 20 entries (entries 4-23, orders 5-24)
+    # Numbered list — 20 entries (entries 4-23, orders 5-24), numbered 1–20
     numbered_entries = all_entries[4:24]
     numbered_items = []
-    for entry in numbered_entries:
+    for i, entry in enumerate(numbered_entries, 1):
         item_title = esc(entry["title"])
         entry_url = href_url(p["entry"], entry["slug"])
-        order = entry["order"]
         numbered_items.append(
             f'    <li class="ff-numbered-item">'
-            f'<span class="ff-number">{order}</span>'
+            f'<span class="ff-number">{i}</span>'
             f'<a href="{entry_url}" class="ff-numbered-link">{item_title}</a>'
             f'</li>'
         )
