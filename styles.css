@@ -1010,6 +1010,9 @@ section {
   flex: 0 0 220px;
   text-align: center;
   scroll-snap-align: start;
+  text-decoration: none;
+  color: inherit;
+  display: block;
 }
 
 .book-cover {
