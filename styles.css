@@ -702,7 +702,11 @@ section {
   gap: 1.5rem;
 }
 
+a.activity-card,
 .activity-card {
+  text-decoration: none;
+  color: inherit;
+
   background: var(--dark-card);
   border: var(--border-subtle);
   border-radius: 18px;
