@@ -100,11 +100,21 @@ nav.scrolled {
   box-shadow: 0 1px 0 rgba(245, 166, 35, 0.08), 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
+nav.scrolled .nav-logo-img {
+  height: 34px;
+}
+
 .nav-logo {
   display: flex;
   align-items: center;
   gap: 0.6rem;
   text-decoration: none;
+}
+
+.nav-logo-img {
+  height: 42px;
+  width: auto;
+  display: block;
 }
 
 .nav-logo-text {
@@ -1758,10 +1768,11 @@ footer {
   margin-bottom: 3rem;
 }
 
-.footer-brand .nav-logo-text {
-  font-size: 2rem;
-  margin-bottom: 1rem;
+.footer-brand .nav-logo-img {
+  height: 54px;
+  width: auto;
   display: block;
+  margin-bottom: 1rem;
 }
 
 .footer-brand p {
