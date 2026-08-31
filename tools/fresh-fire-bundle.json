@@ -176,51 +176,61 @@
     "terms": {
      "discouragement": {
       "label": "When you feel discouraged",
+      "definition": "Readings for the days when your strength is gone and the work feels pointless. They deal with weariness, self-pity, and the pull to give up.",
       "count": 3,
       "has_page": false
      },
      "waiting": {
       "label": "When you are waiting on God",
+      "definition": "Readings for the gap between the promise and its arrival — delay, patience, and holding on when nothing has changed yet.",
       "count": 3,
       "has_page": false
      },
      "opposition": {
       "label": "When you are under attack",
+      "definition": "Readings for seasons of resistance: hostility, spiritual conflict, and the temptation to withdraw when the battle line is drawn.",
       "count": 5,
       "has_page": true
      },
      "hardship": {
       "label": "When life is hard",
+      "definition": "Readings for difficulty itself — trials, loss, and the question of what God is doing when circumstances are against you.",
       "count": 1,
       "has_page": false
      },
      "direction": {
       "label": "When you need direction",
+      "definition": "Readings for decisions and crossroads: hearing God, weighing a choice, and acting on instruction once it comes.",
       "count": 3,
       "has_page": false
      },
      "provision-need": {
       "label": "When you need provision",
+      "definition": "Readings for lack and need — money, resources, and God's character as the one who supplies.",
       "count": 2,
       "has_page": false
      },
      "health": {
       "label": "When you need healing",
+      "definition": "Readings on healing, sickness, and wholeness, and on God as healer.",
       "count": 4,
       "has_page": false
      },
      "starting-over": {
       "label": "When you are starting something new",
+      "definition": "Readings for beginnings: a new season, a first step, and the courage it takes to start.",
       "count": 4,
       "has_page": false
      },
      "growth": {
       "label": "When you want to grow",
+      "definition": "Readings for anyone who wants to go further — maturity, increase, and the disciplines that move you forward.",
       "count": 6,
       "has_page": true
      },
      "purpose-search": {
       "label": "When you are questioning your purpose",
+      "definition": "Readings for the question of why you are here: calling, uniqueness, and the fear of a life spent on the wrong things.",
       "count": 5,
       "has_page": true
      }
