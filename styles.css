@@ -1256,6 +1256,15 @@ section {
   max-width: 800px;
 }
 
+.branch-hero-content .branch-hero-logo {
+  max-width: 180px;
+  height: auto;
+  margin-bottom: 1.5rem;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
 .branch-back-link {
   display: inline-flex;
   align-items: center;
