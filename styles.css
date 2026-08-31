@@ -864,6 +864,8 @@ section {
 .leader-card:nth-child(2) .leader-avatar { background: linear-gradient(135deg, var(--flame-orange), var(--flame-deep)); }
 .leader-card:nth-child(3) .leader-avatar { background: linear-gradient(135deg, var(--flame-deep), var(--flame-ember)); }
 .leader-card:nth-child(4) .leader-avatar { background: linear-gradient(135deg, var(--flame-gold), var(--flame-deep)); }
+.leader-card:nth-child(5) .leader-avatar { background: linear-gradient(135deg, var(--flame-orange), var(--flame-deep)); }
+.leader-card:nth-child(6) .leader-avatar { background: linear-gradient(135deg, var(--flame-gold), var(--flame-orange)); }
 
 .leader-card h3 {
   font-family: var(--font-display);
