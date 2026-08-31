@@ -817,6 +817,10 @@ section {
   padding: 2.8rem 2rem;
   text-align: center;
   transition: transform 0.5s var(--ease-out-expo), box-shadow 0.5s;
+  text-decoration: none;
+  color: inherit;
+  display: block;
+  cursor: pointer;
 }
 
 .leader-card:hover {
@@ -1585,6 +1589,126 @@ section {
   .about-story { padding: 0 1.5rem 3rem; }
   .about-story-block { padding: 2rem 1.5rem; }
   .about-cta { padding: 4rem 1.5rem; }
+}
+
+/* ─── LEADER PAGES ─── */
+.leader-hero {
+  position: relative;
+  min-height: 50vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8rem 2rem 4rem;
+  overflow: hidden;
+}
+
+.leader-hero-bg {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 60% 50% at 50% 50%, rgba(196, 65, 10, 0.25), transparent 70%),
+    radial-gradient(ellipse 40% 35% at 30% 70%, rgba(245, 166, 35, 0.10), transparent 55%),
+    var(--dark-bg);
+}
+
+.leader-hero-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 60% 50% at 50% 50%, rgba(232, 117, 26, 0.06), transparent 70%);
+  animation: ambientPulse 8s ease-in-out infinite;
+}
+
+.leader-hero-content {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  max-width: 800px;
+}
+
+.leader-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cream-muted);
+  text-decoration: none;
+  margin-bottom: 2rem;
+  transition: color 0.3s;
+}
+
+.leader-back-link:hover {
+  color: var(--flame-gold);
+}
+
+.leader-hero-image {
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  overflow: hidden;
+  margin: 0 auto 2rem;
+  box-shadow: 0 0 0 4px rgba(245, 166, 35, 0.15), 0 20px 50px rgba(0, 0, 0, 0.5);
+  position: relative;
+}
+
+.leader-hero-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.leader-hero-title {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(2rem, 4.5vw, 3.5rem);
+  line-height: 1.1;
+  color: var(--white);
+  text-shadow: 0 4px 60px rgba(254, 252, 248, 0.1);
+  margin-bottom: 0.8rem;
+}
+
+.leader-hero-role {
+  font-family: var(--font-accent);
+  font-size: 1.15rem;
+  font-style: italic;
+  color: var(--flame-gold);
+}
+
+/* Leader detail */
+.leader-detail {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 2rem 6rem;
+}
+
+.leader-detail-inner {
+  background: var(--dark-card);
+  border: var(--border-subtle);
+  border-radius: 18px;
+  padding: 3rem;
+}
+
+.leader-detail-text {
+  font-size: 1.05rem;
+  line-height: 1.85;
+  color: var(--cream);
+  margin-bottom: 1.2rem;
+}
+
+.leader-detail-text:last-of-type {
+  margin-bottom: 0;
+}
+
+@media (max-width: 768px) {
+  .leader-hero { min-height: 40vh; padding: 6rem 1.5rem 3rem; }
+  .leader-hero-image { width: 180px; height: 180px; }
+  .leader-detail { padding: 0 1.5rem 4rem; }
+  .leader-detail-inner { padding: 2rem 1.5rem; }
 }
 
 /* ─── DONATE ─── */
