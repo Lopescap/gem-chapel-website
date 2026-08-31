@@ -2588,6 +2588,13 @@ footer {
 .ff-entry-list li {
   margin: 0;
   border-bottom: 1px solid rgba(245, 166, 35, 0.08);
+  list-style: none;
+  padding-left: 0;
+}
+
+.ff-entry-list li::before {
+  display: none;
+  content: none;
 }
 
 .ff-entry-list li:last-child {
