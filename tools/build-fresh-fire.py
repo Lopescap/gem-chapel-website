@@ -884,6 +884,28 @@ def build_hub(all_entries, origin, head_tpl, nav_tpl, footer_tpl, patterns, bund
 
     nav_block = build_hub_navigation(p, bundle)
 
+    # Full entry list — all 181 entries as raw HTML for crawlers
+    full_items = []
+    for entry in all_entries:
+        item_title = esc(entry["title"])
+        item_summary = esc(entry["summary"]) if entry.get("summary") else ""
+        entry_url = href_url(p["entry"], entry["slug"])
+        full_items.append(
+            f'      <li><a href="{entry_url}"><strong>{item_title}</strong><br>{item_summary}</a></li>'
+        )
+    full_list_html = (
+        '<section class="article-body-section">\n'
+        '  <article>\n'
+        '    <div class="article-body-content">\n'
+        '      <h2 style="font-family:var(--font-display);font-weight:800;font-size:1.5rem;color:var(--white);margin-top:2rem;">All Fresh Fire for Today</h2>\n'
+        '      <ul class="ff-entry-list">\n'
+        + "\n".join(full_items) +
+        '\n      </ul>\n'
+        '    </div>\n'
+        '  </article>\n'
+        '</section>\n'
+    )
+
     page = f"""<!DOCTYPE html>
 <html lang="en">
 {head}
@@ -897,6 +919,8 @@ def build_hub(all_entries, origin, head_tpl, nav_tpl, footer_tpl, patterns, bund
 {featured_html}
 
 {numbered_html}
+
+{full_list_html}
 
 <section class="article-body-section">
   <article>
@@ -1091,8 +1115,9 @@ def validate(bundle):
     facets = bundle["taxonomy"]["facets"]
     entries = bundle["entries"]
 
-    if len(entries) != 92:
-        errors.append(f"Expected 92 entries, got {len(entries)}")
+    expected = bundle.get("collection", {}).get("entry_count", len(entries))
+    if len(entries) != expected:
+        errors.append(f"Expected {expected} entries, got {len(entries)}")
 
     slugs = [e["slug"] for e in entries]
     dupes = [s for s, c in Counter(slugs).items() if c > 1]
@@ -1100,10 +1125,10 @@ def validate(bundle):
         errors.append(f"Duplicate slugs: {dupes}")
 
     orders = [e["order"] for e in entries]
-    expected = set(range(1, 93))
+    expected_set = set(range(1, expected + 1))
     actual = set(orders)
-    missing = expected - actual
-    extra = actual - expected
+    missing = expected_set - actual
+    extra = actual - expected_set
     if missing:
         errors.append(f"Missing orders: {sorted(missing)}")
     if extra:
