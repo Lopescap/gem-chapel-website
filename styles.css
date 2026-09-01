@@ -64,6 +64,21 @@ body {
   color: var(--white);
 }
 
+/* Default anchor — no blue links anywhere on the site */
+a {
+  color: var(--cream);
+  text-decoration: none;
+  transition: color 0.3s var(--ease-out-expo);
+}
+
+a:hover {
+  color: var(--flame-gold);
+}
+
+a:active {
+  color: var(--flame-orange);
+}
+
 img { max-width: 100%; display: block; }
 
 /* Grain overlay — site-wide atmosphere */
@@ -2845,4 +2860,176 @@ footer {
 
 @media (max-width: 480px) {
   .branches-grid { grid-template-columns: 1fr; }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   FRESH FIRE DEVOTIONAL — Entry pages & Index pages
+   Scoped to <article> inside .article-body-section (FF-only):
+   only FF pages use <article> in this context.
+   All pages use existing custom properties only.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Body measure: 60–75 character line length for devotional prose ── */
+.article-body-section article .article-body-content {
+  max-width: 640px;
+}
+
+/* ── "In short" summary — warm, inset, visually distinct from body ── */
+.ff-in-short {
+  font-family: var(--font-accent);
+  font-size: 1.1rem;
+  font-style: italic;
+  line-height: 1.7;
+  color: var(--flame-gold);
+  background: rgba(245, 166, 35, 0.04);
+  border-left: 3px solid var(--flame-orange);
+  padding: 1rem 1.5rem;
+  border-radius: 0 12px 12px 0;
+  margin-bottom: 2rem;
+}
+
+.ff-in-short strong {
+  color: var(--white);
+  font-weight: 700;
+}
+
+/* ── Key Scripture blockquote — existing blockquote style reused (gold left border, italic) ── */
+
+/* ── Prayer & Confession — closing movement, not two more paragraphs ── */
+.ff-prayer,
+.ff-confession {
+  margin-top: 2rem;
+  padding: 1.5rem 1.5rem 0.5rem;
+  border-top: 1px solid rgba(245, 166, 35, 0.12);
+}
+
+.ff-confession {
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid rgba(245, 166, 35, 0.12);
+}
+
+.ff-prayer h3,
+.ff-confession h3 {
+  font-family: var(--font-accent);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--flame-gold);
+  margin-bottom: 0.5rem;
+  letter-spacing: 0.04em;
+}
+
+.ff-prayer p,
+.ff-confession p {
+  font-family: var(--font-accent);
+  font-size: 1.05rem;
+  font-style: italic;
+  line-height: 1.7;
+  color: var(--cream);
+}
+
+/* ── Scriptures Referenced section — compact, chip-style links ── */
+.ff-scriptures {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(245, 166, 35, 0.08);
+}
+
+.ff-scriptures h3 {
+  font-family: var(--font-accent);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--cream-muted);
+  margin-bottom: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.ff-scriptures ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.ff-scriptures ul li {
+  margin: 0;
+  padding: 0;
+}
+
+.ff-scriptures ul li::before {
+  display: none;
+  content: none;
+}
+
+.ff-scriptures ul li a {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--cream-muted);
+  background: rgba(254, 252, 248, 0.04);
+  padding: 0.2rem 0.6rem;
+  border-radius: 100px;
+  text-decoration: none;
+  transition: background 0.3s, color 0.3s;
+}
+
+.ff-scriptures ul li a:hover {
+  background: rgba(245, 166, 35, 0.1);
+  color: var(--flame-gold);
+}
+
+/* ── Tag chips on entry pages — small, quiet navigation ── */
+.article-body-section article .ff-tags {
+  margin-top: 1.5rem;
+}
+
+.article-body-section article .ff-tag {
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--cream-muted);
+  background: rgba(254, 252, 248, 0.04);
+  padding: 0.15rem 0.5rem;
+  border-radius: 100px;
+  text-decoration: none;
+  transition: background 0.3s, color 0.3s;
+}
+
+.article-body-section article .ff-tag:hover {
+  background: rgba(245, 166, 35, 0.1);
+  color: var(--flame-gold);
+}
+
+/* ── Prev/Next navigation at foot of each entry ── */
+.ff-prev-next {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(245, 166, 35, 0.08);
+}
+
+.ff-prev,
+.ff-next {
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--cream-muted);
+  text-decoration: none;
+  transition: color 0.3s;
+  max-width: 45%;
+}
+
+.ff-prev:hover,
+.ff-next:hover {
+  color: var(--flame-gold);
+}
+
+.ff-next {
+  text-align: right;
 }

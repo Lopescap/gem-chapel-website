@@ -1,10 +1,7 @@
 /**
  * Fresh Fire Search — client-side index and filter
- * Add entries to FRESH_FIRE_ENTRIES as content is supplied.
- * Each entry: { slug, title, date, excerpt, tags[], month, year }
+ * Loads entry data from fresh-fire-data.json and provides live search.
  */
-const FRESH_FIRE_ENTRIES = [];
-
 (function() {
   const searchInput = document.getElementById('ff-search-input');
   const resultsContainer = document.getElementById('ff-results');
@@ -13,19 +10,29 @@ const FRESH_FIRE_ENTRIES = [];
 
   if (!searchInput) return;
 
+  // Load entry data
+  let FRESH_FIRE_ENTRIES = [];
+  fetch('/resources/fresh-fire/fresh-fire-data.json')
+    .then(r => r.json())
+    .then(data => {
+      FRESH_FIRE_ENTRIES = data;
+      renderResults('');
+    })
+    .catch(() => {
+      // data unavailable — search stays empty
+    });
+
   function renderResults(query) {
     const q = query.toLowerCase().trim();
 
     let filtered;
     if (!q) {
-      // show all, grouped by month
       filtered = FRESH_FIRE_ENTRIES.slice();
     } else {
       filtered = FRESH_FIRE_ENTRIES.filter(e =>
         e.title.toLowerCase().includes(q) ||
         e.excerpt.toLowerCase().includes(q) ||
-        (e.tags && e.tags.some(t => t.toLowerCase().includes(q))) ||
-        (e.month && e.month.toLowerCase().includes(q))
+        (e.tags && e.tags.some(t => t.toLowerCase().includes(q)))
       );
     }
 
@@ -40,38 +47,23 @@ const FRESH_FIRE_ENTRIES = [];
     }
     if (emptyState) emptyState.style.display = 'none';
 
-    // Group by month/year
-    const groups = {};
-    filtered.forEach(e => {
-      const key = e.month ? `${e.month} ${e.year || ''}` : 'Other';
-      if (!groups[key]) groups[key] = [];
-      groups[key].push(e);
-    });
-
     let html = '';
-    for (const [group, entries] of Object.entries(groups)) {
-      if (group !== 'Other') {
-        html += `<div class="ff-group-label">${group}</div>`;
-      }
-      entries.forEach(e => {
-        const dateStr = e.date ? `<span class="ff-date">${e.date}</span>` : '';
-        html += `
-          <a href="/resources/fresh-fire/${e.slug}" class="ff-result-card">
-            <div class="ff-result-body">
-              <h4 class="ff-result-title">${e.title}</h4>
-              ${dateStr}
-              <p class="ff-result-excerpt">${e.excerpt}</p>
-              ${e.tags && e.tags.length ? `<div class="ff-tags">${e.tags.map(t => `<span class="ff-tag">${t}</span>`).join('')}</div>` : ''}
-            </div>
-          </a>
-        `;
-      });
-    }
+    filtered.forEach(e => {
+      html += `
+        <a href="/resources/fresh-fire/${e.slug}" class="ff-result-card">
+          <div class="ff-result-body">
+            <h4 class="ff-result-title">${e.title}</h4>
+            <p class="ff-result-excerpt">${e.excerpt}</p>
+            ${e.tags && e.tags.length ? `<div class="ff-tags">${e.tags.map(t => `<span class="ff-tag">${t}</span>`).join('')}</div>` : ''}
+          </div>
+        </a>
+      `;
+    });
     resultsContainer.innerHTML = html;
   }
 
   searchInput.addEventListener('input', () => renderResults(searchInput.value));
 
-  // initial render
+  // initial render — data may not be loaded yet
   renderResults('');
 })();
