@@ -27,7 +27,7 @@
      "knowing-god": {
       "label": "Knowing God",
       "definition": "God's character and names; intimacy with him as a person.",
-      "count": 18,
+      "count": 20,
       "has_page": true
      },
      "prayer": {
@@ -51,7 +51,7 @@
      "holy-spirit": {
       "label": "The Holy Spirit",
       "definition": "Life in the Spirit; power, anointing, and guidance.",
-      "count": 6,
+      "count": 5,
       "has_page": true
      },
      "obedience": {
@@ -69,38 +69,38 @@
      "destiny": {
       "label": "Purpose and Destiny",
       "definition": "Calling, uniqueness, and the shape of a life.",
-      "count": 22,
+      "count": 24,
       "has_page": true
      },
      "perseverance": {
       "label": "Perseverance and Warfare",
       "definition": "Adversity, opposition, endurance, and standing firm.",
-      "count": 15,
+      "count": 16,
       "has_page": true
      },
      "diligence": {
       "label": "Diligence and Excellence",
       "definition": "Work, discipline, attitude, preparation, and results.",
-      "count": 21,
+      "count": 24,
       "has_page": true
      },
      "provision": {
       "label": "Provision and Prosperity",
       "definition": "God as supplier; money, blessing, and kingdom prosperity.",
-      "count": 20,
+      "count": 19,
       "has_page": true
      },
      "words": {
       "label": "Words and Confession",
       "definition": "The power of speech; declaring and confessing God's word.",
-      "count": 5,
-      "has_page": true
+      "count": 4,
+      "has_page": false
      },
      "gratitude": {
       "label": "Gratitude and Joy",
       "definition": "Thanksgiving, contentment, happiness, and discouragement.",
-      "count": 5,
-      "has_page": true
+      "count": 2,
+      "has_page": false
      },
      "glory": {
       "label": "Glory and Transformation",
@@ -111,14 +111,14 @@
      "jesus": {
       "label": "Jesus and the Cross",
       "definition": "The person and work of Christ; salvation and mercy.",
-      "count": 12,
+      "count": 13,
       "has_page": true
      },
      "church": {
       "label": "Church and Fellowship",
       "definition": "Gathering, leadership, mentors, and the people you follow.",
-      "count": 7,
-      "has_page": true
+      "count": 4,
+      "has_page": false
      }
     }
    },
@@ -201,7 +201,7 @@
      "direction": {
       "label": "When you need direction",
       "definition": "Readings for decisions and crossroads: hearing God, weighing a choice, and acting on instruction once it comes.",
-      "count": 7,
+      "count": 6,
       "has_page": true
      },
      "provision-need": {
@@ -666,8 +666,8 @@
       "order": 29
      },
      {
-      "slug": "supernatural-faith-faith-3",
-      "title": "Supernatural Faith – Faith 3",
+      "slug": "supernatural-faith-part-3",
+      "title": "Supernatural Faith — Part 3",
       "part": 3,
       "order": 30
      }
@@ -2574,7 +2574,7 @@
     "parties"
    ],
    "themes": [
-    "destiny"
+    "perseverance"
    ],
    "needs": [
     "discouragement"
@@ -2585,7 +2585,7 @@
    "series_part": null,
    "series_total": null,
    "source_page": 34,
-   "tags_reviewed": false
+   "tags_reviewed": true
   },
   {
    "slug": "connecting-to-greater-glory",
@@ -2905,9 +2905,9 @@
    "tags_reviewed": true
   },
   {
-   "slug": "supernatural-faith-faith-3",
+   "slug": "supernatural-faith-part-3",
    "order": 30,
-   "title": "Supernatural Faith – Faith 3",
+   "title": "Supernatural Faith — Part 3",
    "summary": "Faith is the engine that makes the impossible to become possible. Wherever faith goes, signs and wonders follow. It is active faith in the God of possibilities that causes you to emerge out of the adversities of life with a testimony.",
    "key_scripture": "Mark 9:23",
    "key_scripture_text": "Jesus said unto him, If thou canst believe, all things are possible to him that believeth.",
@@ -6518,7 +6518,7 @@
     "lord"
    ],
    "themes": [
-    "church"
+    "diligence"
    ],
    "needs": [
     "growth"
@@ -7628,7 +7628,7 @@
     "christianity"
    ],
    "themes": [
-    "provision"
+    "jesus"
    ],
    "needs": [],
    "practices": [],
@@ -7637,7 +7637,7 @@
    "series_part": null,
    "series_total": null,
    "source_page": 10,
-   "tags_reviewed": false
+   "tags_reviewed": true
   },
   {
    "slug": "the-glory-of-his-presence",
@@ -7899,7 +7899,7 @@
     "feed"
    ],
    "themes": [
-    "gratitude"
+    "destiny"
    ],
    "needs": [],
    "practices": [],
@@ -7908,7 +7908,7 @@
    "series_part": null,
    "series_total": null,
    "source_page": 14,
-   "tags_reviewed": false
+   "tags_reviewed": true
   },
   {
    "slug": "take-responsibility-for-your-life",
@@ -8038,7 +8038,7 @@
     "lifted"
    ],
    "themes": [
-    "gratitude"
+    "destiny"
    ],
    "needs": [],
    "practices": [],
@@ -8047,7 +8047,7 @@
    "series_part": null,
    "series_total": null,
    "source_page": 16,
-   "tags_reviewed": false
+   "tags_reviewed": true
   },
   {
    "slug": "what-are-you-living-for",
@@ -8387,7 +8387,7 @@
     "means"
    ],
    "themes": [
-    "words"
+    "knowing-god"
    ],
    "needs": [],
    "practices": [],
@@ -8396,7 +8396,7 @@
    "series_part": null,
    "series_total": null,
    "source_page": 21,
-   "tags_reviewed": false
+   "tags_reviewed": true
   },
   {
    "slug": "my-god-the-master",
@@ -8534,7 +8534,7 @@
   {
    "slug": "my-god-the-healer",
    "order": 107,
-   "title": "My God, the Healer?",
+   "title": "My God, the Healer!",
    "summary": "There are many strange sicknesses and diseases that attack mortal men in this world That’s why as a child of God, you must have a revelation of your heavenly Father as a Healer.",
    "key_scripture": "Exodus 15:26",
    "key_scripture_text": "And said, If thou wilt diligently hearken to the voice of the Lord thy God, and wilt do that which is right in his sight, and wilt give ear to his commandments, and keep all his statutes, I will put none of these diseases upon thee, which I have brought upon the Egyptians: for I am the Lord that healeth thee.",
@@ -9233,7 +9233,7 @@
     "resurrected"
    ],
    "themes": [
-    "church"
+    "knowing-god"
    ],
    "needs": [
     "hardship"
@@ -9244,7 +9244,7 @@
    "series_part": null,
    "series_total": null,
    "source_page": 31,
-   "tags_reviewed": false
+   "tags_reviewed": true
   },
   {
    "slug": "the-road-to-total-protection",
@@ -10178,7 +10178,7 @@
     "leadership"
    ],
    "themes": [
-    "church"
+    "diligence"
    ],
    "needs": [],
    "practices": [],
@@ -10187,7 +10187,7 @@
    "series_part": null,
    "series_total": null,
    "source_page": 47,
-   "tags_reviewed": false
+   "tags_reviewed": true
   },
   {
    "slug": "a-day-without-prayer",
@@ -10559,7 +10559,7 @@
     "thanksgiving"
    ],
    "themes": [
-    "gratitude"
+    "destiny"
    ],
    "needs": [
     "purpose-search",
@@ -11902,16 +11902,14 @@
    "themes": [
     "destiny"
    ],
-   "needs": [
-    "direction"
-   ],
+   "needs": [],
    "practices": [],
    "attributes": [],
    "series": null,
    "series_part": null,
    "series_total": null,
    "source_page": 71,
-   "tags_reviewed": false
+   "tags_reviewed": true
   },
   {
    "slug": "stop-the-excuses",
@@ -12698,7 +12696,7 @@
     "else"
    ],
    "themes": [
-    "holy-spirit"
+    "diligence"
    ],
    "needs": [],
    "practices": [],
@@ -12707,7 +12705,7 @@
    "series_part": null,
    "series_total": null,
    "source_page": 84,
-   "tags_reviewed": false
+   "tags_reviewed": true
   },
   {
    "slug": "the-footprints-of-god",
