@@ -467,9 +467,8 @@ def build_entry(entry, origin, entries, head_tpl, nav_tpl, footer_tpl, bundle, p
     ks_text = entry.get("key_scripture_text", "")
     if ks_ref:
         ks_html = f"""    <div class="ff-key-scripture">
-      <blockquote>{esc(ks_text)}
-        <footer>&mdash; {esc(ks_ref)}</footer>
-      </blockquote>
+      <blockquote>{esc(ks_text)}</blockquote>
+      <p class="ff-ref">&mdash; {esc(ks_ref)}</p>
     </div>
 """
 

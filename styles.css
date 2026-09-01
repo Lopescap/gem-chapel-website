@@ -2894,7 +2894,29 @@ footer {
   font-weight: 700;
 }
 
-/* ── Key Scripture blockquote — existing blockquote style reused (gold left border, italic) ── */
+/* ── Key Scripture blockquote — verse with reference underneath, no nested box ── */
+.ff-key-scripture {
+  margin: 1.5rem 0;
+}
+
+.ff-key-scripture blockquote {
+  border-left: 3px solid var(--flame-gold);
+  padding: 1.2rem 1.5rem;
+  background: rgba(245, 166, 35, 0.04);
+  border-radius: 0 12px 12px 0;
+  font-style: italic;
+  font-size: 1rem;
+  line-height: 1.8;
+  color: var(--cream);
+}
+
+.ff-key-scripture .ff-ref {
+  font-family: var(--font-accent);
+  font-size: 0.95rem;
+  color: var(--cream-muted);
+  margin-top: 0.5rem;
+  padding-left: 0.2rem;
+}
 
 /* ── Prayer & Confession — closing movement, not two more paragraphs ── */
 .ff-prayer,
