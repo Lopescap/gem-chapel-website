@@ -1,4 +1,11 @@
 {
   "cleanUrls": true,
-  "trailingSlash": false
+  "trailingSlash": false,
+  "redirects": [
+    {
+      "source": "/resources/fresh-fire/supernatural-faith-faith-3",
+      "destination": "/resources/fresh-fire/supernatural-faith-part-3",
+      "permanent": true
+    }
+  ]
 }
